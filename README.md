@@ -1,0 +1,2 @@
+# odooexa
+instancia ejemplo
