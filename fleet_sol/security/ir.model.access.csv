@@ -1,3 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_taller_solicitud_admin_asignaciones,Taller Solicitud Admin Asignaciones,model_taller_solicitud,__export__.res_groups_174_2528a950,1,1,1,1
+access_taller_solicitud_admin_asignaciones,Taller Solicitud Admin Asignaciones,model_taller_solicitud,__export__.res_groups_65_79830cf4,1,1,1,1
 access_taller_solicitud_analista,Taller Solicitud Analista,model_taller_solicitud,__export__.res_groups_175_74cea427,1,1,1,0
