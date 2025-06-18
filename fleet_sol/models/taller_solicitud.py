@@ -29,7 +29,9 @@ class TallerSolicitud(models.Model):
     vehiculo_id = fields.Many2one(
         'fleet.vehicle',
         string='Vehículo',
-        required=True
+        required=True,
+        ondelete='cascade', # Opcional: define el comportamiento al borrar la solicitud
+        help="El vehículo para el cual se solicita el taller."
     )
     descripcion_falla = fields.Text(
         string='Descripción de la Falla',
