@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Menú raíz dentro de Fleet -->
+    <menuitem id="menu_taller_solicitud_root"
+              name="Solicitudes Taller"
+              parent="fleet.menu_root"
+              sequence="10" />
+
+    <!-- Acción principal -->
+    <record id="action_taller_solicitud" model="ir.actions.act_window">
+        <field name="name">Solicitudes Taller</field>
+        <field name="res_model">taller.solicitud</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Enlace de menú que llama la acción -->
+    <menuitem id="menu_taller_solicitud"
+              name="Solicitudes Taller"
+              parent="menu_taller_solicitud_root"
+              action="action_taller_solicitud"
+              sequence="20"/>
+
+    <!-- Vista árbol -->
+    <record id="view_taller_solicitud_tree" model="ir.ui.view">
+        <field name="name">taller.solicitud.tree</field>
+        <field name="model">taller.solicitud</field>
+        <field name="arch" type="xml">
+            <tree string="Solicitudes Taller">
+                <field name="name"/>
+                <field name="descripcion_falla"/>
+                <field name="analista_id"/>
+                <field name="vehiculo_id"/>
+                <field name="fecha_solicitud"/>
+                <field name="fecha_asignacion"/>
+                <field name="fecha_ingreso_taller" readonly="state not in ('assigned', 'in_taller')"/>
+                <field name="fecha_reparacion_terminada"/>
+                <field name="distrito_vehiculo"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'assigned'" decoration-success="state == 'repaired'" decoration-danger="state == 'cancel'"/>
+
+                <field name="odometro_unidad"/>
+                <field name="check_engine"/>
+                <field name="nivel_aceite"/>
+                <field name="temperatura_auto"/>
+                <field name="bateria_auto"/>
+                <field name="sensor_abs"/>
+                <field name="direccion_volante"/>
+                <field name="frenos"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista formulario -->
+    <record id="view_taller_solicitud_form" model="ir.ui.view">
+        <field name="name">taller.solicitud.form</field>
+        <field name="model">taller.solicitud</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de Taller">
+                <!-- Sección de HEADER: Aquí se colocan los botones de flujo de trabajo -->
+                <header>
+                    <!-- Botón para confirmar (asignar fecha) - De solo lectura si el estado NO es 'Borrador' -->
+                    <button name="action_confirmar"
+                            string="Asignar Fecha"
+                            type="object"
+                            class="oe_highlight" 
+                            invisible="state != 'draft'"  groups="__export__.res_groups_174_2528a950"/> <!-- Clase para resaltar el botón principal de la etapa -->
+                    
+                    <!-- Botón para ingresar a taller - De solo lectura si el estado NO es 'Fecha Asignada' -->
+                    <button name="action_ingresar_taller"
+                            string="Ingresar a Taller"
+                            type="object"
+                            class="oe_highlight"
+                            readonly="state != 'assigned'"/>
+                    
+                    <!-- Botón para marcar como reparado - De solo lectura si el estado NO es 'Ingreso a Taller' -->
+                    <button name="action_reparado"
+                            string="Reparación Terminada"
+                            type="object"
+                            class="oe_highlight"
+                            readonly="state != 'in_workshop'"/>
+                    
+                    <!-- Botón para cancelar - De solo lectura si ya está reparado o cancelado -->
+                    <button name="action_cancelar"
+                            string="Cancelar"
+                            type="object"
+                            invisible="state == 'repaired'" 
+                            readonly="state in ['repaired', 'cancel']"/>
+                    
+                    <!-- El statusbar suele ir en el header también para indicar el progreso -->
+                    <field name="state" widget="statusbar" statusbar_visible="draft,assigned,in_taller,repaired" clickable="0"/>
+                </header>
+
+                <sheet>
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="analista_id" readonly="state not in ('draft', 'assigned')"/>
+                        <field name="vehiculo_id"/>
+                        <field name="descripcion_falla" readonly="state != 'draft'"/>
+                        <field name="tecnico_falla" readonly="state != 'draft'"/>
+                        <field name="odometro_unidad" readonly="state != 'draft'"/>
+                        <field name="telefono_analista" readonly="1"/>
+                        <field name="fecha_solicitud" readonly="1"/>
+                        <field name="fecha_asignacion" groups="__export__.res_groups_174_2528a950" options="{'readonly': 'state not in [\'draft\', \'assigned\']'}"/>
+                        <field name="fecha_ingreso_taller" readonly="state not in ('assigned', 'in_taller')"/>
+                        <field name="fecha_reparacion_terminada" readonly="1"/>
+                        <field name="distrito_vehiculo" readonly="1"/>
+                    </group>
+
+                    <group string="Estado de Testigos del Tablero">
+                        <field name="check_engine" readonly="state != 'draft'"/>
+                        <field name="nivel_aceite" readonly="state != 'draft'"/>
+                        <field name="temperatura_auto" readonly="state != 'draft'"/>
+                        <field name="bateria_auto" readonly="state != 'draft'"/>
+                        <field name="sensor_abs" readonly="state != 'draft'"/>
+                        <field name="direccion_volante" readonly="state != 'draft'"/>
+                        <field name="frenos" readonly="state != 'draft'"/>
+                    </group>
+                    <!-- Eliminamos el footer ya que los botones están en el header -->
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

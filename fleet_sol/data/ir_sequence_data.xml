@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="seq_taller_solicitud" model="ir.sequence">
+        <field name="name">Solicitud Taller</field>
+        <field name="code">taller.solicitud</field>
+        <field name="prefix">REQ/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

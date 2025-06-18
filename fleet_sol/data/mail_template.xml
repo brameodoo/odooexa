@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="email_template_ingreso_taller_analista" model="mail.template">
+            <field name="name">Solicitud de Taller: Ingreso a Taller</field>
+            <field name="model_id" ref="fleet_sol.model_taller_solicitud"/> <field name="subject">Notificación de Ingreso a Taller: Solicitud No. ${object.name}</field>
+            <field name="email_from">${(user.email_formatted or user.company_id.email_formatted or 'noreply@yourcompany.com')}</field>
+            <field name="email_to">${object.analista_id.user_id.email_formatted or ''}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Estimado/a ${object.analista_id.name},</p>
+                    <p>Le informamos que la solicitud de taller No. <strong>${object.name}</strong> para el vehículo <strong>${object.vehiculo_id.name}</strong> ha ingresado a taller.</p>
+                    <p><strong>Fecha de Ingreso a Taller:</strong> ${object.fecha_ingreso_taller and object.fecha_ingreso_taller.strftime('%d/%m/%Y %H:%M') or 'No definida'}</p>
+                    <p>Puede ver los detalles de la solicitud aquí: <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=taller.solicitud&amp;view_type=form">Ver Solicitud</a></p>
+                    <br/>
+                    <p>Gracias,</p>
+                    <p>${user.company_id.name}</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/> </record>
+    </data>
+</odoo>
