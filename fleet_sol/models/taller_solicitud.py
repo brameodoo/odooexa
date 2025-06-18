@@ -108,14 +108,11 @@ class TallerSolicitud(models.Model):
         help='Indica si el testigo de Frenos está encendido.'
     )
 
-    # Campo relacionado: Distrito del Vehículo
-    # Asumiendo que x_studio_distrito_2 es un campo de selección o un Many2one con un 'name'
-    distrito_vehiculo = fields.Char( # Lo cambiamos a Char para asegurar que muestre el valor
-        related='vehiculo_id.x_studio_distrito_2', # Si es Selection o Char directamente
-        # Si x_studio_distrito_2 es un Many2one a otro modelo, sería 'vehiculo_id.x_studio_distrito_2.name'
+        # NUEVO CAMPO: Distrito del Vehículo
+    distrito_vehiculo = fields.Selection(
+        related='vehiculo_id.x_studio_distrito_2', # Aquí es donde se relaciona con el campo del vehículo
         string='Distrito del Vehículo',
-        readonly=True,
-        store=True # Útil para búsquedas y filtros
+        readonly=True # Es de solo lectura porque toma el valor del vehículo
     )
 
     # Campo relacionado para ver la etapa actual del vehículo directamente desde la solicitud
