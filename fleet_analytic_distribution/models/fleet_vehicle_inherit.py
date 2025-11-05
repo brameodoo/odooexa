@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import models, fields
 
 class FleetVehicle(models.Model):
     _inherit = 'fleet.vehicle'
@@ -6,5 +6,5 @@ class FleetVehicle(models.Model):
     analytic_distribution_id = fields.Many2one(
         'account.analytic.distribution.model',
         string='Distribución Analítica',
-        help='Modelo de distribución analítica aplicado a este vehículo.'
+        help='Permite definir un modelo de distribución analítica para este vehículo.'
     )
