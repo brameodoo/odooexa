@@ -6,7 +6,7 @@
     'author': 'Tu Nombre o Empresa',
     'depends': [
         'fleet',
-        'analytic'  # necesario para los modelos analíticos
+        'account'  # necesario para los modelos analíticos
     ],
     'data': [
         'views/fleet_vehicle_view_inherit.xml',
@@ -15,3 +15,4 @@
     'application': False,
     'license': 'LGPL-3',
 }
+
