@@ -11,6 +11,7 @@
     "author": "Popway Software",
     "depends": ["base", "contacts"],
     "data": [
+        'wizard/customer_image_upload_wizard.xml',
         "views/category_views.xml",
         "views/customer_image_kanban_view.xml",
         "views/tag_views.xml",
@@ -18,7 +19,6 @@
         "views/workspace_views.xml",
         "views/comparison_views.xml",
         "views/menu.xml",
-        'wizard/customer_image_upload_wizard.xml',
     ],
     "assets": {
         "web.assets_backend": [
