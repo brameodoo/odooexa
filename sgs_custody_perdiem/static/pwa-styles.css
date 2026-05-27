@@ -1,0 +1,446 @@
+/**
+ * SGS Custody Portal - PWA Styles
+ * Estilos optimizados para aplicación web progresiva
+ */
+
+:root {
+  --primary-color: #1f2937;
+  --secondary-color: #3b82f6;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --light-bg: #f9fafb;
+  --border-color: #e5e7eb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --safe-area-inset-top: env(safe-area-inset-top, 0);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-inset-left: env(safe-area-inset-left, 0);
+  --safe-area-inset-right: env(safe-area-inset-right, 0);
+}
+
+/* Viewport Meta */
+html {
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--light-bg);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  padding-top: var(--safe-area-inset-top);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}
+
+/* Modo Standalone */
+html.pwa-standalone {
+  padding-top: calc(var(--safe-area-inset-top) + 10px);
+}
+
+html.pwa-standalone body {
+  padding-top: 0;
+}
+
+/* Modo Offline */
+html.offline {
+  opacity: 0.9;
+}
+
+html.offline::before {
+  content: 'MODO OFFLINE';
+  position: fixed;
+  top: var(--safe-area-inset-top);
+  left: 0;
+  right: 0;
+  background-color: var(--warning-color);
+  color: white;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 9999;
+  letter-spacing: 1px;
+}
+
+/* Header */
+.navbar {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 16px;
+  padding-top: calc(12px + var(--safe-area-inset-top));
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Botón de instalación */
+#install-app-btn {
+  display: none;
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background-color 0.3s ease;
+}
+
+#install-app-btn:active {
+  background-color: #2563eb;
+}
+
+/* Contenedor principal */
+.container-fluid {
+  padding: 16px;
+  padding-left: calc(16px + var(--safe-area-inset-left));
+  padding-right: calc(16px + var(--safe-area-inset-right));
+  padding-bottom: calc(16px + var(--safe-area-inset-bottom) + 80px);
+}
+
+/* Cards */
+.card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  background-color: var(--light-bg);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: 16px;
+}
+
+.card-footer {
+  background-color: var(--light-bg);
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Botones */
+.btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-primary:active {
+  background-color: #2563eb;
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.btn-success:active {
+  background-color: #059669;
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.btn-danger:active {
+  background-color: #dc2626;
+}
+
+.btn-block {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Formularios */
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: white;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Listas */
+.list-group {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-group-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.list-group-item:active {
+  background-color: var(--light-bg);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-info {
+  background-color: #dbeafe;
+  color: #0c2d6b;
+}
+
+/* Alertas */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-left: 4px solid var(--success-color);
+}
+
+.alert-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-left: 4px solid var(--warning-color);
+}
+
+.alert-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid var(--danger-color);
+}
+
+.alert-info {
+  background-color: #dbeafe;
+  color: #0c2d6b;
+  border-left: 4px solid var(--secondary-color);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--border-color);
+  border-radius: 50%;
+  border-top-color: var(--secondary-color);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .container-fluid {
+    padding: 12px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Landscape mode */
+@media (orientation: landscape) {
+  body {
+    padding-bottom: calc(var(--safe-area-inset-bottom) + 20px);
+  }
+
+  .container-fluid {
+    padding-bottom: calc(16px + var(--safe-area-inset-bottom) + 20px);
+  }
+}
+
+/* Print styles */
+@media print {
+  .navbar,
+  .btn,
+  #install-app-btn {
+    display: none;
+  }
+
+  body {
+    background-color: white;
+  }
+
+  .card {
+    page-break-inside: avoid;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #1f2937;
+    --light-bg: #111827;
+    --border-color: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+  }
+
+  body {
+    background-color: #0f172a;
+    color: var(--text-primary);
+  }
+
+  .card {
+    background-color: #1f2937;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: #111827;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+  }
+
+  .alert-success {
+    background-color: #064e3b;
+    color: #d1fae5;
+  }
+
+  .alert-warning {
+    background-color: #78350f;
+    color: #fef3c7;
+  }
+
+  .alert-danger {
+    background-color: #7f1d1d;
+    color: #fee2e2;
+  }
+
+  .alert-info {
+    background-color: #0c2d6b;
+    color: #dbeafe;
+  }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

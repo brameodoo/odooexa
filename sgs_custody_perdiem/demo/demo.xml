@@ -1,0 +1,14 @@
+<odoo>
+    <data noupdate="1">
+        <!-- Datos demo básicos -->
+        <record id="demo_client_1" model="sgs.client">
+            <field name="name">Cliente Demo 1</field>
+        </record>
+        <record id="demo_vehicle_1" model="sgs.vehicle">
+            <field name="brand">NISSAN</field>
+            <field name="model">NP300</field>
+            <field name="year">2023</field>
+            <field name="plate">DEMO-001</field>
+        </record>
+    </data>
+</odoo>
