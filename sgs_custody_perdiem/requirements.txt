@@ -1,2 +1,2 @@
-qrcode
-pywebpush
+qrcode==7.4.2
+pywebpush==1.14.0
