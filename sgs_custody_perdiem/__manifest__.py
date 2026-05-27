@@ -37,5 +37,5 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
     'installable': True,
    # 'external_dependencies': {
    #     'python': ['qrcode', 'pywebpush'],
-    },
+   # },
 }
