@@ -1,6 +1,6 @@
 {
     'name': 'SGS Control de Viáticos y Custodias',
-    'version': '4.0.0.0.0',
+    'version': '19.0.1.0.0',
     'category': 'Operations/Logistics',
     'summary': 'Gestión de custodios, rutas, viáticos, comprobación de gastos y portal público por token.',
     'description': '''
