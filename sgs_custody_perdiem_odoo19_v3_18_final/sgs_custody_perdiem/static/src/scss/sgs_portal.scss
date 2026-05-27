@@ -1,0 +1,152 @@
+.sgs-portal {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+.sgs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+}
+
+.sgs-overline {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+    color: #d4af37;
+    margin-bottom: 4px;
+}
+
+.sgs-balance {
+    text-align: right;
+    background: #2a2a2a;
+    padding: 15px 25px;
+    border-radius: 12px;
+    border-left: 4px solid #d4af37;
+}
+
+.sgs-balance.negative {
+    border-left-color: #ff4d4d;
+}
+
+.sgs-balance span {
+    display: block;
+    font-size: 12px;
+    color: #999;
+}
+
+.sgs-balance strong {
+    font-size: 24px;
+    color: #d4af37;
+}
+
+.sgs-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.sgs-kpi {
+    background: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.sgs-kpi span {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+}
+
+.sgs-kpi strong {
+    font-size: 18px;
+}
+
+.sgs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.sgs-card {
+    background: #2a2a2a;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.sgs-card h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #d4af37;
+}
+
+.sgs-form label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.sgs-form input, .sgs-form select, .sgs-form textarea {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 5px;
+}
+
+.sgs-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.sgs-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: opacity 0.2s;
+}
+
+.sgs-btn.primary { background: #d4af37; color: #000; }
+.sgs-btn.blue { background: #3498db; color: #fff; }
+.sgs-btn:hover { opacity: 0.9; }
+
+.sgs-help {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
+.sgs-movements {
+    margin-top: 15px;
+}
+
+.sgs-move {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #333;
+}
+
+.sgs-move span { font-size: 12px; color: #888; }
+.st.pending { color: #f1c40f; }
+.st.approved { color: #2ecc71; }
+.st.rejected { color: #e74c3c; }
