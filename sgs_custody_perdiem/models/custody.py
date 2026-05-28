@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import base64
 import secrets
 from datetime import datetime, timedelta, time
@@ -5,26 +6,27 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
 class SgsCustodian(models.Model):
-    _name = 'hr.employee'
-    _inherit = ['hr.employee', 'mail.thread', 'mail.activity.mixin', 'portal.mixin']
-    _description = 'Custodio SGS'
-    active = fields.Boolean(default=True)
-    company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
-    currency_id = fields.Many2one('res.currency', related='company_id.currency_id', readonly=True)
+    _inherit = 'hr.employee'
+    
+    # Añadimos los campos necesarios a hr.employee
     initial_fund = fields.Monetary('Fondo inicial', currency_field='currency_id', default=0.0, tracking=True)
     portal_token = fields.Char('Token portal', copy=False, index=True, readonly=True, default=lambda self: secrets.token_urlsafe(24))
     portal_url = fields.Char('Enlace portal', compute='_compute_portal_url')
     whatsapp_url = fields.Char('Enlace WhatsApp', compute='_compute_portal_url')
     portal_qr_code = fields.Binary('Código QR Portal', compute='_compute_portal_qr_code')
+    
     deposit_ids = fields.One2many('sgs.perdiem.deposit', 'custodian_id', string='Depósitos')
     service_ids = fields.One2many('sgs.route.service', 'custodian_id', string='Servicios')
     fiscal_receipt_ids = fields.One2many('sgs.fiscal.receipt', 'custodian_id', string='Comprobantes fiscales')
+    
     total_deposits = fields.Monetary('Total depositado', compute='_compute_amounts', currency_field='currency_id')
     total_expenses = fields.Monetary('Total gastos', compute='_compute_amounts', currency_field='currency_id')
     total_fiscal = fields.Monetary('Total fiscal comprobado', compute='_compute_amounts', currency_field='currency_id')
     balance = fields.Monetary('Saldo', compute='_compute_amounts', currency_field='currency_id')
+    
     pending_service_count = fields.Integer('Servicios pendientes', compute='_compute_amounts')
     late_service_count = fields.Integer('Servicios fuera de 12h', compute='_compute_amounts')
+    
     compliance_state = fields.Selection([
         ('blue', 'Sin gastos'),
         ('green', 'Al día'),
@@ -32,19 +34,19 @@ class SgsCustodian(models.Model):
         ('red', 'Atrasado / Rechazado'),
     ], string='Semáforo', compute='_compute_amounts')
 
-    @api.depends('portal_token', 'phone')
+    @api.depends('portal_token', 'mobile_phone')
     def _compute_portal_url(self):
         base = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
         for rec in self:
             rec.portal_url = f'{base}/sgs/custodio/{rec.portal_token}' if rec.portal_token else ''
             phone = ''.join(ch for ch in (rec.mobile_phone or '') if ch.isdigit())
             if phone and rec.portal_url:
-                if len(phone) == 10:
-                    phone = '52' + phone
+                if len(phone) == 10: phone = '52' + phone
                 msg = f'Hola {rec.name.split()[0] if rec.name else ""}, este es tu enlace de viáticos SGS: {rec.portal_url}'
-                rec.whatsapp_url = 'https://wa.me/%s?text=%s' % (phone, msg.replace(' ', '%20'))
+                rec.whatsapp_url = 'https://wa.me/%s?text=%s' % (phone, msg.replace(' ', '%20' ))
             else:
                 rec.whatsapp_url = ''
+
     @api.depends('portal_url')
     def _compute_portal_qr_code(self):
         try:
@@ -54,12 +56,7 @@ class SgsCustodian(models.Model):
             qrcode = None
         for rec in self:
             if qrcode and rec.portal_url:
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
+                qr = qrcode.QRCode(version=1, box_size=10, border=4)
                 qr.add_data(rec.portal_url)
                 qr.make(fit=True)
                 img = qr.make_image(fill_color="black", back_color="white")
@@ -68,36 +65,33 @@ class SgsCustodian(models.Model):
                 rec.portal_qr_code = base64.b64encode(temp.getvalue())
             else:
                 rec.portal_qr_code = False
-    @api.depends('initial_fund', 'deposit_ids.amount', 'service_ids.amount_total', 'service_ids.status', 'service_ids.is_late', 'fiscal_receipt_ids.amount')
+
+    @api.depends('initial_fund', 'deposit_ids.amount', 'service_ids.amount_total', 'service_ids.status', 'fiscal_receipt_ids.amount')
     def _compute_amounts(self):
         for rec in self:
             deposits = sum(rec.deposit_ids.mapped('amount'))
             expenses = sum(rec.service_ids.filtered(lambda s: s.status != 'rejected').mapped('amount_total'))
             fiscal = sum(rec.fiscal_receipt_ids.mapped('amount'))
-            pending = len(rec.service_ids.filtered(lambda s: s.status == 'pending'))
-            late = len(rec.service_ids.filtered(lambda s: s.is_late and s.status != 'approved'))
-            rejected = len(rec.service_ids.filtered(lambda s: s.status == 'rejected'))
             rec.total_deposits = deposits
             rec.total_expenses = expenses
             rec.total_fiscal = fiscal
             rec.balance = rec.initial_fund + deposits - expenses
-            rec.pending_service_count = pending
-            rec.late_service_count = late
-            if not rec.service_ids:
-                rec.compliance_state = 'blue'
-            elif rejected or late:
-                rec.compliance_state = 'red'
-            elif pending:
-                rec.compliance_state = 'yellow'
-            else:
-                rec.compliance_state = 'green'
+            rec.pending_service_count = len(rec.service_ids.filtered(lambda s: s.status == 'pending'))
+            rec.late_service_count = len(rec.service_ids.filtered(lambda s: s.is_late and s.status != 'approved'))
+            if not rec.service_ids: rec.compliance_state = 'blue'
+            elif rec.late_service_count: rec.compliance_state = 'red'
+            elif rec.pending_service_count: rec.compliance_state = 'yellow'
+            else: rec.compliance_state = 'green'
+
     def action_regenerate_portal_token(self):
-        for rec in self:
-            rec.portal_token = secrets.token_urlsafe(24)
+        for rec in self: rec.portal_token = secrets.token_urlsafe(24)
         return True
+
     def action_open_portal(self):
         self.ensure_one()
         return {'type': 'ir.actions.act_url', 'url': self.portal_url, 'target': 'new'}
+
+
 
 class SgsPerdiemDeposit(models.Model):
     _name = 'sgs.perdiem.deposit'
