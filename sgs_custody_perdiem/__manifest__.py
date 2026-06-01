@@ -17,7 +17,6 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
         'security/ir.model.access.csv',
         'security/security.xml',
         'data/sequence.xml',
-        #'views/assets.xml',
         'views/menu.xml',
         'views/custody_views.xml',
         'views/portal_templates.xml',
