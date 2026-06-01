@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sgs_perdiem_deposit,sgs.perdiem.deposit,model_sgs_perdiem_deposit,base.group_user,1,1,1,1
+access_sgs_route_service,sgs.route.service,model_sgs_route_service,base.group_user,1,1,1,1
+access_sgs_toll_line,sgs.toll.line,model_sgs_toll_line,base.group_user,1,1,1,1
+access_sgs_fiscal_receipt,sgs.fiscal.receipt,model_sgs_fiscal_receipt,base.group_user,1,1,1,1

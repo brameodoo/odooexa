@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_sgs" model="ir.module.category">
+        <field name="name">SGS Custodias</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="privilege_sgs_manager" model="res.groups.privilege">
+        <field name="name">Administrador de Viáticos</field>
+        <field name="category_id" ref="module_category_sgs"/>
+    </record>
+
+    <record id="group_sgs_manager" model="res.groups">
+        <field name="name">Administrador de Viáticos</field>
+        <field name="privilege_id" ref="privilege_sgs_manager"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>
