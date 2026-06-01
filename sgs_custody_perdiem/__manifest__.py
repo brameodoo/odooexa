@@ -14,8 +14,8 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
     'license': 'LGPL-3',
     'depends': ['base', 'web', 'mail', 'portal', 'hr', 'fleet', 'contacts'],
     'data': [
-        'security/security.xml',
         'security/ir.model.access.csv',
+        'security/security.xml',
         'data/sequence.xml',
         'views/assets.xml',
         'views/menu.xml',
