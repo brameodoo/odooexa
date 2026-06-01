@@ -3,7 +3,8 @@
     <record id="action_sgs_custodian" model="ir.actions.act_window">
         <name>Custodios</name>
         <res_model>hr.employee</res_model>
-        <view_mode>kanban,list,form</view_mode> <domain>[('portal_token', '!=', False)]</domain>
+        <view_mode>kanban,list,form</view_mode>
+        <domain>[('portal_token', '!=', False)]</domain>
         <help type="html">
             <p class="o_view_nocontent_smiling_face">
                 No hay custodios configurados.
@@ -17,12 +18,14 @@
     <record id="action_sgs_perdiem_deposit" model="ir.actions.act_window">
         <name>Depósitos de Viáticos</name>
         <res_model>sgs.perdiem.deposit</res_model>
-        <view_mode>list,form</view_mode> </record>
+        <view_mode>list,form</view_mode>
+    </record>
 
     <record id="action_sgs_route_service" model="ir.actions.act_window">
         <name>Servicios y Gastos</name>
         <res_model>sgs.route.service</res_model>
-        <view_mode>list,form</view_mode> </record>
+        <view_mode>list,form</view_mode>
+    </record>
 
     <menuitem id="menu_sgs_root" name="SGS Custodia" web_icon="sgs_custody_perdiem,static/description/icon.png" sequence="10"/>
 
