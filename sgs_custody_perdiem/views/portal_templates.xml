@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="portal_custodian_home" name="Portal custodio SGS">
         <t t-call="portal.portal_layout">
@@ -55,14 +56,12 @@
 
                         <h2 class="sgs-mt">Movimientos recientes</h2>
                         <div class="sgs-movements">
-                            <!-- Mensaje de éxito -->
                             <t t-if="request.params.get('ok') == 'fiscal'">
                                 <div class="alert alert-success" style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em;">
                                     ¡Comprobante recibido! La IA lo está procesando. Refresca en unos segundos.
                                 </div>
                             </t>
                             
-                            <!-- Facturas y Comprobantes -->
                             <t t-foreach="fiscal_receipts" t-as="fr">
                                 <div class="sgs-move">
                                     <div>
@@ -88,7 +87,6 @@
                                 </div>
                             </t>
 
-                            <!-- Servicios -->
                             <t t-foreach="services" t-as="svc">
                                 <div class="sgs-move">
                                     <div>
