@@ -24,7 +24,7 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
         'views/pwa_head_template.xml',
     ],
     'demo': [
-        'demo/demo.xml',
+        #'demo/demo.xml',
     ],
     'assets': {
         'web.assets_frontend': [
