@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+<data>
     <record id="view_sgs_custodian_kanban" model="ir.ui.view">
         <field name="name">sgs.custodian.kanban</field>
         <field name="model">hr.employee</field>
@@ -174,4 +175,167 @@
         </field>
     </record>
 
-    <record id="
+    <record id="view_sgs_deposit_list" model="ir.ui.view">
+        <field name="name">sgs.perdiem.deposit.list</field>
+        <field name="model">sgs.perdiem.deposit</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="date"/>
+                <field name="custodian_id"/>
+                <field name="month"/>
+                <field name="week"/>
+                <field name="concept"/>
+                <field name="amount" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sgs_deposit_form" model="ir.ui.view">
+        <field name="name">sgs.perdiem.deposit.form</field>
+        <field name="model">sgs.perdiem.deposit</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="custodian_id"/>
+                        <field name="date"/>
+                        <field name="week"/>
+                        <field name="concept"/>
+                        <field name="amount"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sgs_fiscal_list" model="ir.ui.view">
+        <field name="name">sgs.fiscal.receipt.list</field>
+        <field name="model">sgs.fiscal.receipt</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="date"/>
+                <field name="custodian_id"/>
+                <field name="description"/>
+                <field name="provider"/>
+                <field name="provider_vat"/>
+                <field name="amount" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sgs_fiscal_form" model="ir.ui.view">
+        <field name="name">sgs.fiscal.receipt.form</field>
+        <field name="model">sgs.fiscal.receipt</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_process_ocr" type="object" string="Procesar OCR" class="btn-primary" invisible="ocr_status == 'processing'"/>
+                    <field name="ocr_status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="ocr_status != 'processing'">
+                        Procesando imagen con IA... por favor espere.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not ocr_error_message">
+                        <field name="ocr_error_message"/>
+                    </div>
+                    <group>
+                        <group string="Datos del Comprobante">
+                            <field name="custodian_id"/>
+                            <field name="date"/>
+                            <field name="amount"/>
+                            <field name="description"/>
+                            <field name="provider"/>
+                            <field name="provider_vat"/>
+                        </group>
+                        <group string="Imagen">
+                            <field name="image" widget="image" filename="image_filename"/>
+                            <field name="image_filename" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Resultados OCR" invisible="ocr_status == 'pending'">
+                            <group>
+                                <group>
+                                    <field name="is_fiscal" readonly="1"/>
+                                    <field name="rfc_emitter" readonly="1"/>
+                                    <field name="emitter_name" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="ocr_date" readonly="1"/>
+                                    <field name="ocr_amount" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="JSON Crudo">
+                                <field name="ocr_raw_data" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sgs_vehicle_list" model="ir.ui.view">
+        <field name="name">sgs.vehicle.list</field>
+        <field name="model">sgs.vehicle</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="plate"/>
+                <field name="brand"/>
+                <field name="model"/>
+                <field name="year"/>
+                <field name="color"/>
+                <field name="assigned_to"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sgs_vehicle_form" model="ir.ui.view">
+        <field name="name">sgs.vehicle.form</field>
+        <field name="model">sgs.vehicle</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="brand"/>
+                        <field name="model"/>
+                        <field name="year"/>
+                        <field name="plate"/>
+                        <field name="color"/>
+                        <field name="assigned_to"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sgs_client_list" model="ir.ui.view">
+        <field name="name">sgs.client.list</field>
+        <field name="model">sgs.client</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sgs_client_form" model="ir.ui.view">
+        <field name="name">sgs.client.form</field>
+        <field name="model">sgs.client</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</data>
+</odoo>
