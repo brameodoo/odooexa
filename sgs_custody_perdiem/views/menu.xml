@@ -1,58 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Menú Principal -->
-    <menuitem id="menu_sgs_root" name="SGS Custodias" web_icon="sgs_custody_perdiem,static/description/icon.png" sequence="10" groups="group_sgs_manager"/>
-
-    <!-- Categorías -->
-    <menuitem id="menu_sgs_operations" name="Operaciones" parent="menu_sgs_root" sequence="10"/>
-    <menuitem id="menu_sgs_finance" name="Finanzas" parent="menu_sgs_root" sequence="20"/>
-    <menuitem id="menu_sgs_config" name="Configuración" parent="menu_sgs_root" sequence="100"/>
-
-    <!-- Acciones -->
+    <!-- Acción para Custodios (ahora apunta a hr.employee) -->
     <record id="action_sgs_custodian" model="ir.actions.act_window">
-        <field name="name">Custodios</field>
-        <field name="res_model">sgs.custodian</field>
-        <field name="view_mode">kanban,list,form</field>
+        <name>Custodios</name>
+        <res_model>hr.employee</res_model>
+        <view_mode>kanban,tree,form</view_mode>
+        <domain>[('portal_token', '!=', False)]</domain>
+        <help type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay custodios configurados.
+            </p>
+            <p>
+                Los empleados con un Token de Portal generado aparecerán aquí.
+            </p>
+        </help>
     </record>
 
-    <record id="action_sgs_route_service" model="ir.actions.act_window">
-        <field name="name">Servicios y Gastos</field>
-        <field name="res_model">sgs.route.service</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
+    <!-- Acción para Depósitos -->
     <record id="action_sgs_perdiem_deposit" model="ir.actions.act_window">
-        <field name="name">Depósitos de Viáticos</field>
-        <field name="res_model">sgs.perdiem.deposit</field>
-        <field name="view_mode">list,form</field>
+        <name>Depósitos de Viáticos</name>
+        <res_model>sgs.perdiem.deposit</res_model>
+        <view_mode>tree,form</view_mode>
     </record>
 
-    <record id="action_sgs_fiscal_receipt" model="ir.actions.act_window">
-        <field name="name">Comprobantes Fiscales</field>
-        <field name="res_model">sgs.fiscal.receipt</field>
-        <field name="view_mode">list,form</field>
+    <!-- Acción para Servicios (Rutas) -->
+    <record id="action_sgs_route_service" model="ir.actions.act_window">
+        <name>Servicios y Gastos</name>
+        <res_model>sgs.route.service</res_model>
+        <view_mode>tree,form</view_mode>
     </record>
 
-    <record id="action_sgs_vehicle" model="ir.actions.act_window">
-        <field name="name">Vehículos</field>
-        <field name="res_model">sgs.vehicle</field>
-        <field name="view_mode">list,form</field>
-    </record>
+    <!-- Menú Raíz -->
+    <menuitem id="menu_sgs_root" name="SGS Custodia" web_icon="sgs_custody_perdiem,static/description/icon.png" sequence="10"/>
 
-    <record id="action_sgs_client" model="ir.actions.act_window">
-        <field name="name">Clientes</field>
-        <field name="res_model">sgs.client</field>
-        <field name="view_mode">list,form</field>
-    </record>
-
-    <!-- Menús de Operaciones -->
+    <!-- Submenús -->
+    <menuitem id="menu_sgs_operations" name="Operaciones" parent="menu_sgs_root" sequence="10"/>
+    
     <menuitem id="menu_sgs_custodian" name="Custodios" parent="menu_sgs_operations" action="action_sgs_custodian" sequence="10"/>
-    <menuitem id="menu_sgs_route_service" name="Servicios / Gastos" parent="menu_sgs_operations" action="action_sgs_route_service" sequence="20"/>
-
-    <!-- Menús de Finanzas -->
-    <menuitem id="menu_sgs_perdiem_deposit" name="Depósitos" parent="menu_sgs_finance" action="action_sgs_perdiem_deposit" sequence="10"/>
-    <menuitem id="menu_sgs_fiscal_receipt" name="Comprobantes Fiscales" parent="menu_sgs_finance" action="action_sgs_fiscal_receipt" sequence="20"/>
-
-    <!-- Menús de Configuración -->
-    <menuitem id="menu_sgs_vehicle" name="Vehículos" parent="menu_sgs_config" action="action_sgs_vehicle" sequence="10"/>
-    <menuitem id="menu_sgs_client" name="Clientes" parent="menu_sgs_config" action="action_sgs_client" sequence="20"/>
+    <menuitem id="menu_sgs_route_service" name="Servicios / Rutas" parent="menu_sgs_operations" action="action_sgs_route_service" sequence="20"/>
+    <menuitem id="menu_sgs_perdiem_deposit" name="Depósitos" parent="menu_sgs_operations" action="action_sgs_perdiem_deposit" sequence="30"/>
 </odoo>
