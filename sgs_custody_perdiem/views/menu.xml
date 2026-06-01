@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+<data>
     <record id="action_sgs_custodian" model="ir.actions.act_window">
         <name>Custodios</name>
         <res_model>hr.employee</res_model>
@@ -34,4 +35,5 @@
     <menuitem id="menu_sgs_custodian" name="Custodios" parent="menu_sgs_operations" action="action_sgs_custodian" sequence="10"/>
     <menuitem id="menu_sgs_route_service" name="Servicios / Rutas" parent="menu_sgs_operations" action="action_sgs_route_service" sequence="20"/>
     <menuitem id="menu_sgs_perdiem_deposit" name="Depósitos" parent="menu_sgs_operations" action="action_sgs_perdiem_deposit" sequence="30"/>
+</data>
 </odoo>
