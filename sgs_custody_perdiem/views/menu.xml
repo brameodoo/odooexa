@@ -1,42 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Acción para Custodios (ahora apunta a hr.employee) -->
-    <record id="action_sgs_custodian" model="ir.actions.act_window">
-        <name>Custodios</name>
-        <res_model>hr.employee</res_model>
-        <view_mode>kanban,tree,form</view_mode>
-        <domain>[('portal_token', '!=', False)]</domain>
-        <help type="html">
-            <p class="o_view_nocontent_smiling_face">
-                No hay custodios configurados.
-            </p>
-            <p>
-                Los empleados con un Token de Portal generado aparecerán aquí.
-            </p>
-        </help>
-    </record>
+    <data>
+        <!-- Acción para Custodios -->
+        <record id="action_sgs_custodian" model="ir.actions.act_window">
+            <name>Custodios</name>
+            <res_model>hr.employee</res_model>
+            <view_mode>kanban,tree,form</view_mode>
+            <domain>[('portal_token', '!=', False)]</domain>
+            <help type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No hay custodios configurados.
+                </p>
+                <p>
+                    Los empleados con un Token de Portal generado aparecerán aquí.
+                </p>
+            </help>
+        </record>
 
-    <!-- Acción para Depósitos -->
-    <record id="action_sgs_perdiem_deposit" model="ir.actions.act_window">
-        <name>Depósitos de Viáticos</name>
-        <res_model>sgs.perdiem.deposit</res_model>
-        <view_mode>tree,form</view_mode>
-    </record>
+        <!-- Acción para Depósitos -->
+        <record id="action_sgs_perdiem_deposit" model="ir.actions.act_window">
+            <name>Depósitos de Viáticos</name>
+            <res_model>sgs.perdiem.deposit</res_model>
+            <view_mode>tree,form</view_mode>
+        </record>
 
-    <!-- Acción para Servicios (Rutas) -->
-    <record id="action_sgs_route_service" model="ir.actions.act_window">
-        <name>Servicios y Gastos</name>
-        <res_model>sgs.route.service</res_model>
-        <view_mode>tree,form</view_mode>
-    </record>
+        <!-- Acción para Servicios (Rutas) -->
+        <record id="action_sgs_route_service" model="ir.actions.act_window">
+            <name>Servicios y Gastos</name>
+            <res_model>sgs.route.service</res_model>
+            <view_mode>tree,form</view_mode>
+        </record>
 
-    <!-- Menú Raíz -->
-    <menuitem id="menu_sgs_root" name="SGS Custodia" web_icon="sgs_custody_perdiem,static/description/icon.png" sequence="10"/>
+        <!-- Menú Raíz -->
+        <menuitem id="menu_sgs_root" name="SGS Custodia" web_icon="sgs_custody_perdiem,static/description/icon.png" sequence="10"/>
 
-    <!-- Submenús -->
-    <menuitem id="menu_sgs_operations" name="Operaciones" parent="menu_sgs_root" sequence="10"/>
-    
-    <menuitem id="menu_sgs_custodian" name="Custodios" parent="menu_sgs_operations" action="action_sgs_custodian" sequence="10"/>
-    <menuitem id="menu_sgs_route_service" name="Servicios / Rutas" parent="menu_sgs_operations" action="action_sgs_route_service" sequence="20"/>
-    <menuitem id="menu_sgs_perdiem_deposit" name="Depósitos" parent="menu_sgs_operations" action="action_sgs_perdiem_deposit" sequence="30"/>
+        <!-- Submenús -->
+        <menuitem id="menu_sgs_operations" name="Operaciones" parent="menu_sgs_root" sequence="10"/>
+        
+        <menuitem id="menu_sgs_custodian" name="Custodios" parent="menu_sgs_operations" action="action_sgs_custodian" sequence="10"/>
+        <menuitem id="menu_sgs_route_service" name="Servicios / Rutas" parent="menu_sgs_operations" action="action_sgs_route_service" sequence="20"/>
+        <menuitem id="menu_sgs_perdiem_deposit" name="Depósitos" parent="menu_sgs_operations" action="action_sgs_perdiem_deposit" sequence="30"/>
+    </data>
 </odoo>
