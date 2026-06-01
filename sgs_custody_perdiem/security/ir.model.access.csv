@@ -3,5 +3,3 @@ access_sgs_perdiem_deposit,sgs.perdiem.deposit,model_sgs_perdiem_deposit,base.gr
 access_sgs_route_service,sgs.route.service,model_sgs_route_service,base.group_user,1,1,1,1
 access_sgs_toll_line,sgs.toll.line,model_sgs_toll_line,base.group_user,1,1,1,1
 access_sgs_fiscal_receipt,sgs.fiscal.receipt,model_sgs_fiscal_receipt,base.group_user,1,1,1,1
-access_sgs_pwa_subscription,sgs.pwa.subscription,model_sgs_pwa_subscription,base.group_user,1,1,1,1
-
