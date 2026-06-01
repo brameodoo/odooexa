@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-   <data> 
-    <template id="portal_custodian_home" name="Portal custodio SGS">
+   <template id="portal_custodian_home" name="Portal custodio SGS">
         <t t-call="portal.portal_layout">
             <t t-call="sgs_custody_perdiem.pwa_head_template"/>
             <div class="sgs-portal">
@@ -106,5 +105,4 @@
             </div>
         </t>
     </template>
-   </data>   
-</odoo>
+ </odoo>
