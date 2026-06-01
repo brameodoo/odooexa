@@ -1,10 +1,15 @@
 <odoo>
     <record id="view_sgs_custodian_kanban" model="ir.ui.view">
         <field name="name">sgs.custodian.kanban</field>
-        <field name="model">sgs.custodian</field>
+        <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile">
-                <field name="name"/><field name="employee_number"/><field name="balance"/><field name="total_expenses"/><field name="compliance_state"/><field name="currency_id"/>
+                <field name="name"/>
+                <field name="employee_number"/>
+                <field name="position"/> <field name="balance"/>
+                <field name="total_expenses"/>
+                <field name="compliance_state"/>
+                <field name="currency_id"/>
                 <templates>
                     <t t-name="card">
                         <div class="oe_kanban_global_click sgs-kanban-card">
@@ -30,7 +35,7 @@
 
     <record id="view_sgs_custodian_list" model="ir.ui.view">
         <field name="name">sgs.custodian.list</field>
-        <field name="model">sgs.custodian</field>
+        <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <list decoration-danger="balance &lt; 0" decoration-warning="pending_service_count &gt; 0" decoration-success="compliance_state == 'green'">
                 <field name="employee_number"/>
@@ -49,7 +54,7 @@
 
     <record id="view_sgs_custodian_form" model="ir.ui.view">
         <field name="name">sgs.custodian.form</field>
-        <field name="model">sgs.custodian</field>
+        <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <form string="Custodio">
                 <header>
@@ -111,8 +116,6 @@
             </list>
         </field>
     </record>
-
-<!-- Vista de búsqueda eliminada temporalmente para depuración -->
 
     <record id="view_sgs_service_form" model="ir.ui.view">
         <field name="name">sgs.route.service.form</field>
