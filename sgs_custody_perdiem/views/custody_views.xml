@@ -143,7 +143,7 @@
                         <group>
                             <field name="origin"/>
                             <field name="destination"/>
-                            <field name="companion"/>
+                           <!-- <field name="companion"/> -->
                             <field name="vehicle_id"/>
                             <field name="vehicle_snapshot"/>
                             <field name="plate_snapshot"/>
