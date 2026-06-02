@@ -6,8 +6,8 @@
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile">
                 <field name="name"/>
-                <field name="registration_number"/>
-                <field name="job_id"/>
+                <field name="employee_number"/>
+                <field name="position"/>
                 <field name="balance"/>
                 <field name="total_expenses"/>
                 <field name="compliance_state"/>
@@ -17,16 +17,35 @@
                         <div class="oe_kanban_global_click sgs-kanban-card">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <strong><field name="name"/></strong><br/>
-                                    <span class="text-muted"><field name="registration_number"/> · <field name="job_id"/></span>
+                                    <strong>
+                                        <field name="name"/>
+                                    </strong>
+                                    <br/>
+                                    <span class="text-muted">
+                                        <field name="employee_number"/>
+                                        ·
+                                        <field name="position"/>
+                                    </span>
                                 </div>
                                 <span t-attf-class="badge rounded-pill #{record.compliance_state.raw_value == 'green' and 'text-bg-success' or record.compliance_state.raw_value == 'yellow' and 'text-bg-warning' or record.compliance_state.raw_value == 'red' and 'text-bg-danger' or 'text-bg-info'}">
                                     <field name="compliance_state"/>
                                 </span>
                             </div>
                             <div class="mt-3 d-flex justify-content-between">
-                                <div><small>Saldo</small><br/><strong><field name="balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></strong></div>
-                                <div><small>Gastos</small><br/><strong><field name="total_expenses" widget="monetary" options="{'currency_field': 'currency_id'}"/></strong></div>
+                                <div>
+                                    <small>Saldo</small>
+                                    <br/>
+                                    <strong>
+                                        <field name="balance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </strong>
+                                </div>
+                                <div>
+                                    <small>Gastos</small>
+                                    <br/>
+                                    <strong>
+                                        <field name="total_expenses" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </strong>
+                                </div>
                             </div>
                         </div>
                     </t>
@@ -40,9 +59,9 @@
         <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <list decoration-danger="balance &lt; 0" decoration-warning="pending_service_count &gt; 0" decoration-success="compliance_state == 'green'">
-                <field name="registration_number"/>
+                <field name="employee_number"/>
                 <field name="name"/>
-                <field name="job_id"/>
+                <field name="position"/>
                 <field name="phone"/>
                 <field name="initial_fund" sum="Fondo"/>
                 <field name="total_deposits" sum="Depósitos"/>
@@ -64,11 +83,15 @@
                     <button name="action_regenerate_portal_token" type="object" string="Regenerar token" class="btn-secondary" confirm="El enlace anterior dejará de funcionar. ¿Continuar?"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><h1><field name="name" placeholder="Nombre del custodio"/></h1></div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del custodio"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
-                            <field name="registration_number"/>
-                            <field name="job_id"/>
+                            <field name="employee_number"/>
+                            <field name="position"/>
                             <field name="phone"/>
                             <field name="initial_fund"/>
                         </group>
@@ -90,9 +113,41 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Depósitos"><field name="deposit_ids"><list editable="bottom"><field name="date"/><field name="week"/><field name="concept"/><field name="amount"/></list></field></page>
-                        <page string="Servicios"><field name="service_ids"><list><field name="name"/><field name="date"/><field name="client_id"/><field name="origin"/><field name="destination"/><field name="amount_total"/><field name="status" widget="badge"/><field name="is_late"/></list></field></page>
-                        <page string="Comprobantes fiscales"><field name="fiscal_receipt_ids"><list editable="bottom"><field name="date"/><field name="description"/><field name="provider"/><field name="provider_vat"/><field name="amount"/></list></field></page>
+                        <page string="Depósitos">
+                            <field name="deposit_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="week"/>
+                                    <field name="concept"/>
+                                    <field name="amount"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Servicios">
+                            <field name="service_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="client_id"/>
+                                    <field name="origin"/>
+                                    <field name="destination"/>
+                                    <field name="amount_total"/>
+                                    <field name="status" widget="badge"/>
+                                    <field name="is_late"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Comprobantes fiscales">
+                            <field name="fiscal_receipt_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="description"/>
+                                    <field name="provider"/>
+                                    <field name="provider_vat"/>
+                                    <field name="amount"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -131,7 +186,11 @@
                     <field name="status" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
                             <field name="custodian_id"/>
@@ -143,7 +202,7 @@
                         <group>
                             <field name="origin"/>
                             <field name="destination"/>
-                           <!-- <field name="companion"/> -->
+                            <field name="companion"/>
                             <field name="vehicle_id"/>
                             <field name="vehicle_snapshot"/>
                             <field name="plate_snapshot"/>
@@ -165,8 +224,20 @@
                         </group>
                     </group>
                     <notebook>
-                        <page string="Casetas"><field name="toll_line_ids"><list editable="bottom"><field name="name"/><field name="amount"/><field name="image" widget="image" filename="image_filename"/><field name="image_filename" invisible="1"/></list></field></page>
-                        <page string="Comentarios"><field name="comments"/><field name="validation_note"/></page>
+                        <page string="Casetas">
+                            <field name="toll_line_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="amount"/>
+                                    <field name="image" widget="image" filename="image_filename"/>
+                                    <field name="image_filename" invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Comentarios">
+                            <field name="comments"/>
+                            <field name="validation_note"/>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -278,33 +349,33 @@
     </record>
 
     <record id="view_sgs_vehicle_list" model="ir.ui.view">
-        <field name="name">sgs.vehicle.list</field>
-        <field name="model">sgs.vehicle</field>
+        <field name="name">sgs.fleet.vehicle.list</field>
+        <field name="model">fleet.vehicle</field>
         <field name="arch" type="xml">
             <list>
-                <field name="plate"/>
-                <field name="brand"/>
-                <field name="model"/>
-                <field name="year"/>
+                <field name="license_plate"/>
+                <field name="model_id"/>
                 <field name="color"/>
-                <field name="assigned_to"/>
+                <field name="driver_id"/>
             </list>
         </field>
     </record>
 
     <record id="view_sgs_vehicle_form" model="ir.ui.view">
-        <field name="name">sgs.vehicle.form</field>
-        <field name="model">sgs.vehicle</field>
+        <field name="name">sgs.fleet.vehicle.form</field>
+        <field name="model">fleet.vehicle</field>
         <field name="arch" type="xml">
-            <form>
+            <form string="Vehículo">
                 <sheet>
                     <group>
-                        <field name="brand"/>
-                        <field name="model"/>
-                        <field name="year"/>
-                        <field name="plate"/>
-                        <field name="color"/>
-                        <field name="assigned_to"/>
+                        <group string="Vehículo">
+                            <field name="license_plate"/>
+                            <field name="model_id"/>
+                            <field name="color"/>
+                        </group>
+                        <group string="Asignación">
+                            <field name="driver_id"/>
+                        </group>
                     </group>
                 </sheet>
             </form>
