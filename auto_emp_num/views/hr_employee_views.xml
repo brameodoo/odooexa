@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_auto_num" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.auto.num</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_generate_numbers_by_seniority" 
+                        string="Numerar por Antigüedad" 
+                        type="object" 
+                        class="oe_highlight"
+                        groups="hr.group_hr_manager"
+                        confirm="Se asignarán números EMP0000x. ¿Continuar?"/>
+            </xpath>
+            <xpath expr="//field[@name='mobile_phone']" position="before">
+                <field name="registration_number" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_hr_employee_number" model="ir.sequence">
+        <field name="name">Secuencia de ID de Empleado</field>
+        <field name="code">hr.employee.number</field>
+        <field name="prefix">EMP</field>
+        <field name="padding">5</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+    </record>
+</odoo>
