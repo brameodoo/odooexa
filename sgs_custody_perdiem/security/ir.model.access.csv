@@ -1,6 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sgs_route_service_manager,access.sgs.route.service.manager,model_sgs_route_service,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_perdiem_deposit_manager,access.sgs.perdiem.deposit.manager,model_sgs_perdiem_deposit,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_route_service_manager,access.sgs.route.service.manager,model_sgs_route_service,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_toll_line_manager,access.sgs.toll.line.manager,model_sgs_toll_line,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_fiscal_receipt_manager,access.sgs.fiscal.receipt.manager,model_sgs_fiscal_receipt,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_client_manager,access.sgs.client.manager,model_sgs_client,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
-access_sgs_fleet_vehicle_manager,access.sgs.fleet.vehicle.manager,fleet.model_fleet_vehicle,sgs_custody_perdiem.group_sgs_manager,1,1,1,0
+access_sgs_push_subscription_manager,access.sgs.push.subscription.manager,model_sgs_push_subscription,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_push_notification_log_manager,access.sgs.push.notification.log.manager,model_sgs_push_notification_log,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
