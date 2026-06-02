@@ -7,12 +7,25 @@
 SGS Control de Viáticos y Custodias
 ===================================
 
-Módulo para administrar custodios de vehículos pesados, depósitos de viáticos, servicios de custodia en rutas, comprobación de gastos, casetas, facturas fiscales y validación administrativa. Incluye portal público por token para que los custodios reporten gastos sin usuario interno.
+Módulo para administrar custodios de vehículos pesados, depósitos de viáticos,
+servicios de custodia en rutas, comprobación de gastos, casetas, facturas
+fiscales y validación administrativa.
+
+Incluye portal público por token para que los custodios reporten gastos sin
+usuario interno.
     ''',
     'author': 'Manus AI',
     'website': 'https://www.odoo.com',
     'license': 'LGPL-3',
-    'depends': ['base', 'web', 'mail', 'portal', 'hr', 'fleet', 'contacts'],
+    'depends': [
+        'base',
+        'web',
+        'mail',
+        'portal',
+        'hr',
+        'fleet',
+        'contacts',
+    ],
     'data': [
         'security/ir.model.access.csv',
         'security/security.xml',
@@ -23,7 +36,7 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
         'views/pwa_head_template.xml',
     ],
     'demo': [
-        #'demo/demo.xml',
+        # 'demo/demo.xml',
     ],
     'assets': {
         'web.assets_frontend': [
@@ -34,7 +47,7 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
     },
     'application': True,
     'installable': True,
-   # 'external_dependencies': {
-   #     'python': ['qrcode', 'pywebpush'],
-   # },
+    # 'external_dependencies': {
+    #     'python': ['qrcode', 'pywebpush'],
+    # },
 }
