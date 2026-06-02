@@ -7,7 +7,7 @@
             <kanban class="o_kanban_mobile">
                 <field name="name"/>
                 <field name="registration_number"/>
-                <field name="position"/>
+                <field name="job_id"/>
                 <field name="balance"/>
                 <field name="total_expenses"/>
                 <field name="compliance_state"/>
@@ -18,7 +18,7 @@
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <strong><field name="name"/></strong><br/>
-                                    <span class="text-muted"><field name="registration_number"/> · <field name="position"/></span>
+                                    <span class="text-muted"><field name="registration_number"/> · <field name="job_id"/></span>
                                 </div>
                                 <span t-attf-class="badge rounded-pill #{record.compliance_state.raw_value == 'green' and 'text-bg-success' or record.compliance_state.raw_value == 'yellow' and 'text-bg-warning' or record.compliance_state.raw_value == 'red' and 'text-bg-danger' or 'text-bg-info'}">
                                     <field name="compliance_state"/>
@@ -42,7 +42,7 @@
             <list decoration-danger="balance &lt; 0" decoration-warning="pending_service_count &gt; 0" decoration-success="compliance_state == 'green'">
                 <field name="registration_number"/>
                 <field name="name"/>
-                <field name="position"/>
+                <field name="job_id"/>
                 <field name="phone"/>
                 <field name="initial_fund" sum="Fondo"/>
                 <field name="total_deposits" sum="Depósitos"/>
@@ -68,7 +68,7 @@
                     <group>
                         <group>
                             <field name="registration_number"/>
-                            <field name="position"/>
+                            <field name="job_id"/>
                             <field name="phone"/>
                             <field name="initial_fund"/>
                         </group>
