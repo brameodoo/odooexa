@@ -428,6 +428,41 @@ class SgsFiscalReceipt(models.Model):
                 rec.description or 'Factura',
             )
 
+    def action_process_ocr(self):
+        """Process OCR for the uploaded fiscal receipt image.
+
+        The module defines the OCR fields and exposes the button in the form
+        view, but no OCR provider is bundled by default. This method keeps the
+        view valid and gives users a clear result instead of failing with a
+        missing-action validation error during module installation.
+        """
+        for rec in self:
+            if not rec.image:
+                raise ValidationError(_('Debes adjuntar una imagen antes de procesar OCR.'))
+
+            rec.write({
+                'ocr_status': 'failed',
+                'ocr_error_message': _(
+                    'No hay un motor OCR configurado. Captura los datos del comprobante manualmente '
+                    'o configura una integración OCR antes de volver a procesarlo.'
+                ),
+                'ocr_raw_data': False,
+            })
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('OCR no configurado'),
+                'message': _(
+                    'La acción existe, pero falta configurar el proveedor OCR. '
+                    'Puedes capturar los datos del comprobante manualmente.'
+                ),
+                'type': 'warning',
+                'sticky': False,
+            },
+        }
+
     @api.constrains('amount', 'ocr_status')
     def _check_amount(self):
         for rec in self:
