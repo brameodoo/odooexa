@@ -27,8 +27,8 @@ usuario interno.
         'contacts',
     ],
     'data': [
-        'security/ir.model.access.csv',
         'security/security.xml',
+        'security/ir.model.access.csv',
         'data/sequence.xml',
         'views/menu.xml',
         'views/custody_views.xml',
