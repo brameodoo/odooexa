@@ -17,35 +17,16 @@
                         <div class="oe_kanban_global_click sgs-kanban-card">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <strong>
-                                        <field name="name"/>
-                                    </strong>
-                                    <br/>
-                                    <span class="text-muted">
-                                        <field name="employee_number"/>
-                                        ·
-                                        <field name="position"/>
-                                    </span>
+                                    <strong><field name="name"/></strong><br/>
+                                    <span class="text-muted"><field name="employee_number"/> · <field name="position"/></span>
                                 </div>
                                 <span t-attf-class="badge rounded-pill #{record.compliance_state.raw_value == 'green' and 'text-bg-success' or record.compliance_state.raw_value == 'yellow' and 'text-bg-warning' or record.compliance_state.raw_value == 'red' and 'text-bg-danger' or 'text-bg-info'}">
                                     <field name="compliance_state"/>
                                 </span>
                             </div>
                             <div class="mt-3 d-flex justify-content-between">
-                                <div>
-                                    <small>Saldo</small>
-                                    <br/>
-                                    <strong>
-                                        <field name="balance" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    </strong>
-                                </div>
-                                <div>
-                                    <small>Gastos</small>
-                                    <br/>
-                                    <strong>
-                                        <field name="total_expenses" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-                                    </strong>
-                                </div>
+                                <div><small>Saldo</small><br/><strong><field name="balance" widget="monetary" options="{'currency_field': 'currency_id'}"/></strong></div>
+                                <div><small>Gastos</small><br/><strong><field name="total_expenses" widget="monetary" options="{'currency_field': 'currency_id'}"/></strong></div>
                             </div>
                         </div>
                     </t>
@@ -83,16 +64,12 @@
                     <button name="action_regenerate_portal_token" type="object" string="Regenerar token" class="btn-secondary" confirm="El enlace anterior dejará de funcionar. ¿Continuar?"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" placeholder="Nombre del custodio"/>
-                        </h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="name" placeholder="Nombre del custodio"/></h1></div>
                     <group>
                         <group>
-                            <field name="employee_number"/>
+                            <field name="employee_number" string="No. empleado"/>
                             <field name="position"/>
-                            <field name="phone"/>
+                            <field name="phone" string="Teléfono WhatsApp"/>
                             <field name="initial_fund"/>
                         </group>
                         <group>
@@ -145,6 +122,7 @@
                                     <field name="provider"/>
                                     <field name="provider_vat"/>
                                     <field name="amount"/>
+                                    <field name="ocr_status" widget="badge"/>
                                 </list>
                             </field>
                         </page>
@@ -186,11 +164,7 @@
                     <field name="status" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name"/>
-                        </h1>
-                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
                     <group>
                         <group>
                             <field name="custodian_id"/>
@@ -230,7 +204,7 @@
                                     <field name="name"/>
                                     <field name="amount"/>
                                     <field name="image" widget="image" filename="image_filename"/>
-                                    <field name="image_filename" invisible="1"/>
+                                    <field name="image_filename"/>
                                 </list>
                             </field>
                         </page>
@@ -283,13 +257,15 @@
         <field name="name">sgs.fiscal.receipt.list</field>
         <field name="model">sgs.fiscal.receipt</field>
         <field name="arch" type="xml">
-            <list>
+            <list decoration-danger="ocr_status == 'failed'" decoration-warning="ocr_status in ['pending', 'processing']" decoration-success="ocr_status == 'success'">
                 <field name="date"/>
                 <field name="custodian_id"/>
                 <field name="description"/>
                 <field name="provider"/>
                 <field name="provider_vat"/>
                 <field name="amount" sum="Total"/>
+                <field name="ocr_status" widget="badge"/>
+                <field name="is_fiscal"/>
             </list>
         </field>
     </record>
@@ -304,12 +280,8 @@
                     <field name="ocr_status" widget="statusbar"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-info" role="alert" invisible="ocr_status != 'processing'">
-                        Procesando imagen con IA... por favor espere.
-                    </div>
-                    <div class="alert alert-danger" role="alert" invisible="not ocr_error_message">
-                        <field name="ocr_error_message"/>
-                    </div>
+                    <div class="alert alert-info" role="alert" invisible="ocr_status != 'processing'">Procesando imagen con IA... por favor espere.</div>
+                    <div class="alert alert-danger" role="alert" invisible="not ocr_error_message"><field name="ocr_error_message"/></div>
                     <group>
                         <group string="Datos del Comprobante">
                             <field name="custodian_id"/>
@@ -321,7 +293,7 @@
                         </group>
                         <group string="Imagen">
                             <field name="image" widget="image" filename="image_filename"/>
-                            <field name="image_filename" invisible="1"/>
+                            <field name="image_filename"/>
                         </group>
                     </group>
                     <notebook>
@@ -337,9 +309,7 @@
                                     <field name="ocr_amount" readonly="1"/>
                                 </group>
                             </group>
-                            <group string="JSON Crudo">
-                                <field name="ocr_raw_data" readonly="1"/>
-                            </group>
+                            <group string="JSON Crudo"><field name="ocr_raw_data" readonly="1"/></group>
                         </page>
                     </notebook>
                 </sheet>
@@ -355,8 +325,8 @@
             <list>
                 <field name="license_plate"/>
                 <field name="model_id"/>
-                <field name="color"/>
                 <field name="driver_id"/>
+                <field name="sgs_custodian_id"/>
             </list>
         </field>
     </record>
@@ -371,10 +341,10 @@
                         <group string="Vehículo">
                             <field name="license_plate"/>
                             <field name="model_id"/>
-                            <field name="color"/>
-                        </group>
-                        <group string="Asignación">
                             <field name="driver_id"/>
+                        </group>
+                        <group string="SGS">
+                            <field name="sgs_custodian_id"/>
                         </group>
                     </group>
                 </sheet>
