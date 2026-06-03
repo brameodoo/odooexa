@@ -6,3 +6,4 @@ access_sgs_fiscal_receipt_manager,access.sgs.fiscal.receipt.manager,model_sgs_fi
 access_sgs_client_manager,access.sgs.client.manager,model_sgs_client,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_push_subscription_manager,access.sgs.push.subscription.manager,model_sgs_push_subscription,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_push_notification_log_manager,access.sgs.push.notification.log.manager,model_sgs_push_notification_log,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+
