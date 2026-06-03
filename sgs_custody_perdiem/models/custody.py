@@ -152,6 +152,8 @@ class SgsCustodian(models.Model):
 
     def action_open_portal(self):
         self.ensure_one()
+        if not self.portal_token:
+            self.portal_token = secrets.token_urlsafe(24)
         return {
             'type': 'ir.actions.act_url',
             'url': self.portal_url,
