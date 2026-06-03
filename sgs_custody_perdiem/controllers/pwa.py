@@ -1,295 +1,226 @@
 # -*- coding: utf-8 -*-
-"""
-Controlador PWA para SGS Custody Portal
-Maneja endpoints para notificaciones push, sincronización y funcionalidades PWA
-"""
+"""PWA JSON endpoints for the SGS custody portal."""
 
-import json
 import logging
-from odoo import http
+
+from odoo import fields, http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
 
 class SGSCustodyPWAController(http.Controller):
-    """Controlador para funcionalidades PWA del portal de custodios"""
+    """PWA helpers for push subscriptions, sync and offline data."""
+
+    def _json_payload(self):
+        return getattr(request, 'jsonrequest', None) or {}
+
+    def _employee_from_user(self):
+        return request.env['hr.employee'].search([
+            ('user_id', '=', request.env.user.id),
+        ], limit=1)
+
+    def _employee_from_token(self, token):
+        return request.env['hr.employee'].sudo().search([
+            ('portal_token', '=', token),
+            ('active', '=', True),
+        ], limit=1)
+
+    def _serialize_service(self, service):
+        return {
+            'id': service.id,
+            'name': service.name,
+            'date': service.date.isoformat() if service.date else False,
+            'status': service.status,
+            'amount': service.amount_total,
+            'client': service.client_id.name if service.client_id else '',
+        }
+
+    def _serialize_receipt(self, receipt):
+        return {
+            'id': receipt.id,
+            'name': receipt.name,
+            'date': receipt.date.isoformat() if receipt.date else False,
+            'amount': receipt.amount,
+            'description': receipt.description,
+            'ocr_status': receipt.ocr_status,
+        }
 
     @http.route('/sgs/custodio/push-subscribe', type='json', auth='user', methods=['POST'])
     def push_subscribe(self, **kwargs):
-        """
-        Registrar suscripción a notificaciones push
-        
-        Args:
-            subscription (dict): Objeto de suscripción de push notification
-        
-        Returns:
-            dict: Respuesta de confirmación
-        """
-        try:
-            subscription = request.jsonrequest
-            user = request.env.user
-            employee = request.env['hr.employee'].search([
-                ('user_id', '=', user.id)
-            ], limit=1)
+        employee = self._employee_from_user()
+        if not employee:
+            return {'status': 'error', 'message': 'No se encontró registro de empleado'}
+        return self._create_push_subscription(employee, self._json_payload())
 
-            if not employee:
-                return {
-                    'status': 'error',
-                    'message': 'No se encontró registro de empleado'
-                }
+    @http.route('/sgs/custodio/<string:token>/push-subscribe', type='json', auth='public', methods=['POST'])
+    def public_push_subscribe(self, token, **kwargs):
+        employee = self._employee_from_token(token)
+        if not employee:
+            return {'status': 'error', 'message': 'Token inválido'}
+        return self._create_push_subscription(employee, self._json_payload())
 
-            # Guardar suscripción en el modelo
-            request.env['sgs.push.subscription'].create({
-                'employee_id': employee.id,
-                'endpoint': subscription.get('endpoint'),
-                'auth': subscription.get('keys', {}).get('auth'),
-                'p256dh': subscription.get('keys', {}).get('p256dh'),
-                'user_agent': request.httprequest.headers.get('User-Agent', ''),
-            })
+    def _create_push_subscription(self, employee, subscription):
+        endpoint = subscription.get('endpoint')
+        keys = subscription.get('keys', {})
+        if not endpoint or not keys.get('auth') or not keys.get('p256dh'):
+            return {'status': 'error', 'message': 'Suscripción incompleta'}
 
-            _logger.info(f'Push subscription registrada para {employee.name}')
+        values = {
+            'employee_id': employee.id,
+            'endpoint': endpoint,
+            'auth': keys.get('auth'),
+            'p256dh': keys.get('p256dh'),
+            'user_agent': request.httprequest.headers.get('User-Agent', ''),
+        }
+        subscription_record = request.env['sgs.push.subscription'].sudo().search([
+            ('endpoint', '=', endpoint),
+        ], limit=1)
+        if subscription_record:
+            subscription_record.write(dict(values, is_active=True, failed_attempts=0))
+        else:
+            subscription_record = request.env['sgs.push.subscription'].sudo().create(values)
 
-            return {
-                'status': 'success',
-                'message': 'Suscripción registrada correctamente'
-            }
-        except Exception as e:
-            _logger.error(f'Error al registrar push subscription: {str(e)}')
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+        _logger.info('Push subscription registrada para %s', employee.name)
+        return {
+            'status': 'success',
+            'subscription_id': subscription_record.id,
+            'message': 'Suscripción registrada correctamente',
+        }
 
     @http.route('/sgs/custodio/sync', type='json', auth='user', methods=['POST'])
     def sync_pending_data(self, **kwargs):
-        """
-        Sincronizar datos pendientes cuando se restaura la conexión
-        
-        Returns:
-            dict: Datos sincronizados
-        """
-        try:
-            user = request.env.user
-            employee = request.env['hr.employee'].search([
-                ('user_id', '=', user.id)
-            ], limit=1)
+        employee = self._employee_from_user()
+        if not employee:
+            return {'status': 'error', 'message': 'No se encontró registro de empleado'}
+        return self._sync_payload(employee)
 
-            if not employee:
-                return {
-                    'status': 'error',
-                    'message': 'No se encontró registro de empleado'
-                }
+    @http.route('/sgs/custodio/<string:token>/sync', type='json', auth='public', methods=['POST'])
+    def public_sync_pending_data(self, token, **kwargs):
+        employee = self._employee_from_token(token)
+        if not employee:
+            return {'status': 'error', 'message': 'Token inválido'}
+        return self._sync_payload(employee)
 
-            # Obtener servicios pendientes de sincronizar
-            pending_services = request.env['sgs.route.service'].search([
-                ('custodian_id', '=', employee.id),
-                ('status', '=', 'pending'),
-                ('create_date', '>=', request.env['ir.config_parameter'].sudo().get_param(
-                    'sgs.last_sync_time', '2024-01-01'
-                ))
-            ])
-
-            # Obtener comprobantes fiscales pendientes
-            pending_receipts = request.env['sgs.fiscal.receipt'].search([
-                ('custodian_id', '=', employee.id),
-                ('ocr_status', 'in', ['pending', 'processing']),
-            ])
-
-            _logger.info(f'Sincronización de datos para {employee.name}')
-
-            return {
-                'status': 'success',
-                'pending_services': len(pending_services),
-                'pending_receipts': len(pending_receipts),
-                'message': 'Datos sincronizados correctamente'
-            }
-        except Exception as e:
-            _logger.error(f'Error al sincronizar datos: {str(e)}')
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+    def _sync_payload(self, employee):
+        pending_services = request.env['sgs.route.service'].sudo().search_count([
+            ('custodian_id', '=', employee.id),
+            ('status', '=', 'pending'),
+        ])
+        pending_receipts = request.env['sgs.fiscal.receipt'].sudo().search_count([
+            ('custodian_id', '=', employee.id),
+            ('ocr_status', 'in', ['pending', 'processing']),
+        ])
+        _logger.info('Sincronización de datos para %s', employee.name)
+        return {
+            'status': 'success',
+            'pending_services': pending_services,
+            'pending_receipts': pending_receipts,
+            'message': 'Datos sincronizados correctamente',
+        }
 
     @http.route('/sgs/custodio/send-notification', type='json', auth='user', methods=['POST'])
     def send_notification(self, **kwargs):
-        """
-        Enviar notificación push a un custodio
-        Requiere permisos de administrador
-        
-        Args:
-            employee_id (int): ID del empleado
-            title (str): Título de la notificación
-            body (str): Cuerpo de la notificación
-            action (str): Acción asociada
-        
-        Returns:
-            dict: Resultado del envío
-        """
-        try:
-            if not request.env.user.has_group('base.group_system'):
-                return {
-                    'status': 'error',
-                    'message': 'No tienes permisos para enviar notificaciones'
-                }
+        if not request.env.user.has_group('base.group_system'):
+            return {'status': 'error', 'message': 'No tienes permisos para enviar notificaciones'}
 
-            data = request.jsonrequest
-            employee_id = data.get('employee_id')
-            title = data.get('title')
-            body = data.get('body')
-            action = data.get('action', 'open')
+        data = self._json_payload()
+        employee_id = data.get('employee_id')
+        title = data.get('title')
+        body = data.get('body')
+        action = data.get('action', 'open')
+        employee = request.env['hr.employee'].sudo().browse(employee_id)
+        if not employee.exists():
+            return {'status': 'error', 'message': 'Empleado no encontrado'}
 
-            employee = request.env['hr.employee'].browse(employee_id)
-            if not employee.exists():
-                return {
-                    'status': 'error',
-                    'message': 'Empleado no encontrado'
-                }
+        subscriptions = request.env['sgs.push.subscription'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('is_active', '=', True),
+        ])
+        if not subscriptions:
+            return {'status': 'warning', 'message': 'El empleado no tiene suscripciones activas'}
 
-            # Obtener suscripciones activas del empleado
-            subscriptions = request.env['sgs.push.subscription'].search([
-                ('employee_id', '=', employee_id),
-                ('is_active', '=', True)
-            ])
+        for subscription in subscriptions:
+            request.env['sgs.push.notification.log'].sudo().create({
+                'subscription_id': subscription.id,
+                'title': title,
+                'body': body,
+                'action': action,
+                'status': 'pending',
+            })
 
-            if not subscriptions:
-                return {
-                    'status': 'warning',
-                    'message': 'El empleado no tiene suscripciones activas'
-                }
-
-            # Aquí iría la lógica para enviar notificaciones push
-            # Requeriría integración con servicio de push (Firebase, Pushover, etc.)
-
-            _logger.info(f'Notificación enviada a {len(subscriptions)} suscripciones de {employee.name}')
-
-            return {
-                'status': 'success',
-                'sent_to': len(subscriptions),
-                'message': 'Notificación enviada correctamente'
-            }
-        except Exception as e:
-            _logger.error(f'Error al enviar notificación: {str(e)}')
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+        _logger.info('Notificación registrada para %s suscripciones de %s', len(subscriptions), employee.name)
+        return {
+            'status': 'success',
+            'sent_to': len(subscriptions),
+            'message': 'Notificación registrada correctamente',
+        }
 
     @http.route('/sgs/custodio/app-info', type='json', auth='user')
     def get_app_info(self, **kwargs):
-        """
-        Obtener información de la aplicación para el cliente
-        
-        Returns:
-            dict: Información de la app
-        """
-        try:
-            user = request.env.user
-            employee = request.env['hr.employee'].search([
-                ('user_id', '=', user.id)
-            ], limit=1)
+        employee = self._employee_from_user()
+        if not employee:
+            return {'status': 'error', 'message': 'No se encontró registro de empleado'}
+        return self._app_info_payload(employee)
 
-            if not employee:
-                return {
-                    'status': 'error',
-                    'message': 'No se encontró registro de empleado'
-                }
+    @http.route('/sgs/custodio/<string:token>/app-info', type='json', auth='public')
+    def public_get_app_info(self, token, **kwargs):
+        employee = self._employee_from_token(token)
+        if not employee:
+            return {'status': 'error', 'message': 'Token inválido'}
+        return self._app_info_payload(employee)
 
-            # Obtener estadísticas
-            total_services = request.env['sgs.route.service'].search_count([
-                ('custodian_id', '=', employee.id)
-            ])
-            pending_services = request.env['sgs.route.service'].search_count([
-                ('custodian_id', '=', employee.id),
-                ('status', '=', 'pending')
-            ])
-            total_balance = employee.balance
-
-            return {
-                'status': 'success',
-                'app_version': '4.0',
-                'app_name': 'SGS Viáticos',
-                'employee_name': employee.name,
-                'employee_id': employee.id,
-                'total_services': total_services,
-                'pending_services': pending_services,
-                'total_balance': total_balance,
-                'currency': employee.company_id.currency_id.symbol,
-                'last_updated': request.env.cr.now().isoformat()
-            }
-        except Exception as e:
-            _logger.error(f'Error al obtener información de la app: {str(e)}')
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+    def _app_info_payload(self, employee):
+        total_services = request.env['sgs.route.service'].sudo().search_count([
+            ('custodian_id', '=', employee.id),
+        ])
+        pending_services = request.env['sgs.route.service'].sudo().search_count([
+            ('custodian_id', '=', employee.id),
+            ('status', '=', 'pending'),
+        ])
+        return {
+            'status': 'success',
+            'app_version': '4.0',
+            'app_name': 'SGS Viáticos',
+            'employee_name': employee.name,
+            'employee_id': employee.id,
+            'total_services': total_services,
+            'pending_services': pending_services,
+            'total_balance': employee.balance,
+            'currency': employee.company_id.currency_id.symbol,
+            'last_updated': fields.Datetime.now().isoformat(),
+        }
 
     @http.route('/sgs/custodio/offline-data', type='json', auth='user')
     def get_offline_data(self, **kwargs):
-        """
-        Obtener datos para modo offline
-        
-        Returns:
-            dict: Datos para caché offline
-        """
-        try:
-            user = request.env.user
-            employee = request.env['hr.employee'].search([
-                ('user_id', '=', user.id)
-            ], limit=1)
+        employee = self._employee_from_user()
+        if not employee:
+            return {'status': 'error', 'message': 'No se encontró registro de empleado'}
+        return self._offline_data_payload(employee)
 
-            if not employee:
-                return {
-                    'status': 'error',
-                    'message': 'No se encontró registro de empleado'
-                }
+    @http.route('/sgs/custodio/<string:token>/offline-data', type='json', auth='public')
+    def public_get_offline_data(self, token, **kwargs):
+        employee = self._employee_from_token(token)
+        if not employee:
+            return {'status': 'error', 'message': 'Token inválido'}
+        return self._offline_data_payload(employee)
 
-            # Obtener servicios recientes
-            services = request.env['sgs.route.service'].search([
-                ('custodian_id', '=', employee.id)
-            ], limit=50, order='date desc')
-
-            services_data = []
-            for service in services:
-                services_data.append({
-                    'id': service.id,
-                    'name': service.name,
-                    'date': service.date.isoformat(),
-                    'status': service.status,
-                    'amount': service.amount_total,
-                    'client': service.client_id.name if service.client_id else '',
-                })
-
-            # Obtener comprobantes recientes
-            receipts = request.env['sgs.fiscal.receipt'].search([
-                ('custodian_id', '=', employee.id)
-            ], limit=20, order='date desc')
-
-            receipts_data = []
-            for receipt in receipts:
-                receipts_data.append({
-                    'id': receipt.id,
-                    'name': receipt.name,
-                    'date': receipt.date.isoformat(),
-                    'amount': receipt.amount,
-                    'description': receipt.description,
-                })
-
-            return {
-                'status': 'success',
-                'employee': {
-                    'id': employee.id,
-                    'name': employee.name,
-                    'balance': employee.balance,
-                    'currency': employee.company_id.currency_id.symbol,
-                },
-                'services': services_data,
-                'receipts': receipts_data,
-                'timestamp': request.env.cr.now().isoformat()
-            }
-        except Exception as e:
-            _logger.error(f'Error al obtener datos offline: {str(e)}')
-            return {
-                'status': 'error',
-                'message': str(e)
-            }
+    def _offline_data_payload(self, employee):
+        services = request.env['sgs.route.service'].sudo().search([
+            ('custodian_id', '=', employee.id),
+        ], limit=50, order='date desc')
+        receipts = request.env['sgs.fiscal.receipt'].sudo().search([
+            ('custodian_id', '=', employee.id),
+        ], limit=20, order='date desc')
+        return {
+            'status': 'success',
+            'employee': {
+                'id': employee.id,
+                'name': employee.name,
+                'balance': employee.balance,
+                'currency': employee.company_id.currency_id.symbol,
+            },
+            'services': [self._serialize_service(service) for service in services],
+            'receipts': [self._serialize_receipt(receipt) for receipt in receipts],
+            'timestamp': fields.Datetime.now().isoformat(),
+        }
