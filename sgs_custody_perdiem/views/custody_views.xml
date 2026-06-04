@@ -120,7 +120,7 @@
         </field>
     </record>
 
-<record id="view_sgs_service_search" model="ir.ui.view">
+<record id="view_sgs_service_search_v2" model="ir.ui.view">
         <field name="name">sgs.route.service.search</field>
         <field name="model">sgs.route.service</field>
         <field name="arch" type="xml">
