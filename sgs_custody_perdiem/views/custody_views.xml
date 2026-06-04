@@ -86,39 +86,13 @@
                     </group>
                     <notebook>
                         <page string="Depósitos">
-                            <field name="deposit_ids">
-                                <tree editable="bottom" model="sgs.perdiem.deposit">
-                                    <field name="date"/>
-                                    <field name="week"/>
-                                    <field name="concept"/>
-                                    <field name="amount"/>
-                                </tree>
-                            </field>
+                            <field name="deposit_ids" mode="tree"/>
                         </page>
                         <page string="Servicios">
-                            <field name="service_ids">
-                                <tree model="sgs.route.service">
-                                    <field name="name"/>
-                                    <field name="date"/>
-                                    <field name="client_id"/>
-                                    <field name="origin"/>
-                                    <field name="destination"/>
-                                    <field name="amount_total"/>
-                                    <field name="status" widget="badge"/>
-                                    <field name="is_late"/>
-                                </tree>
-                            </field>
+                            <field name="service_ids" mode="tree"/>
                         </page>
                         <page string="Comprobantes fiscales">
-                            <field name="fiscal_receipt_ids">
-                                <tree editable="bottom" model="sgs.fiscal.receipt">
-                                    <field name="date"/>
-                                    <field name="description"/>
-                                    <field name="provider"/>
-                                    <field name="provider_vat"/>
-                                    <field name="amount"/>
-                                </tree>
-                            </field>
+                            <field name="fiscal_receipt_ids" mode="tree"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -240,9 +214,9 @@
         <field name="name">sgs.perdiem.deposit.list</field>
         <field name="model">sgs.perdiem.deposit</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="bottom">
                 <field name="date"/>
-                <field name="custodian_id"/>
+                <field name="custodian_id" column_invisible="parent and parent.model == 'sgs.custodian'"/>
                 <field name="month"/>
                 <field name="week"/>
                 <field name="concept"/>
@@ -274,9 +248,9 @@
         <field name="name">sgs.fiscal.receipt.list</field>
         <field name="model">sgs.fiscal.receipt</field>
         <field name="arch" type="xml">
-            <list>
+            <list editable="bottom">
                 <field name="date"/>
-                <field name="custodian_id"/>
+                <field name="custodian_id" column_invisible="parent and parent.model == 'sgs.custodian'"/>
                 <field name="description"/>
                 <field name="provider"/>
                 <field name="provider_vat"/>
