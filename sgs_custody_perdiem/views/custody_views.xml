@@ -120,7 +120,7 @@
         </field>
     </record>
 
-    <record id="view_sgs_service_search" model="ir.ui.view">
+<record id="view_sgs_service_search" model="ir.ui.view">
         <field name="name">sgs.route.service.search</field>
         <field name="model">sgs.route.service</field>
         <field name="arch" type="xml">
@@ -135,12 +135,12 @@
                 <group expand="0" string="Agrupar">
                     <filter string="Custodio" context="{'group_by':'custodian_id'}"/>
                     <filter string="Estado" context="{'group_by':'status'}"/>
-                    <filter string="Fecha" context="{'group_by':'date'}"/>
+                    <filter string="Fecha (Mes)" context="{'group_by':'date:month'}"/>
                 </group>
             </search>
         </field>
     </record>
-
+    
     <record id="view_sgs_service_form" model="ir.ui.view">
         <field name="name">sgs.route.service.form</field>
         <field name="model">sgs.route.service</field>
