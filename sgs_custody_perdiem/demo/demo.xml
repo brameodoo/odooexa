@@ -1,0 +1,8 @@
+<odoo>
+    <record id="demo_client_1" model="sgs.client"><field name="name">TRANSPORTES DEL PACÍFICO</field></record>
+    <record id="demo_client_2" model="sgs.client"><field name="name">LOGÍSTICA NORTE</field></record>
+    <record id="demo_vehicle_1" model="sgs.vehicle"><field name="brand">MAZDA</field><field name="model">3</field><field name="year">2024</field><field name="plate">ABC123A</field><field name="color">GRIS</field></record>
+    <record id="demo_vehicle_2" model="sgs.vehicle"><field name="brand">NISSAN</field><field name="model">SENTRA</field><field name="year">2023</field><field name="plate">XYZ789B</field><field name="color">BLANCO</field></record>
+    <record id="demo_custodian_1" model="sgs.custodian"><field name="name">JUAN PÉREZ LÓPEZ</field><field name="employee_number">SGL-001</field><field name="position">CUSTODIO TIPO A</field><field name="phone">5512345678</field><field name="initial_fund">1500</field></record>
+    <record id="demo_deposit_1" model="sgs.perdiem.deposit"><field name="custodian_id" ref="demo_custodian_1"/><field name="date">2026-01-10</field><field name="week">Semana 2</field><field name="amount">2500</field></record>
+</odoo>
