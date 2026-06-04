@@ -54,26 +54,31 @@ class SgsCustodian(models.Model):
             if phone and rec.portal_url:
                 if len(phone) == 10:
                     phone = '52' + phone
-                msg = f'Hola {rec.name.split()[0] if rec.name else ""}, este es tu enlace de viáticos SGS: {rec.portal_url}'
-                rec.whatsapp_url = 'https://wa.me/%s?text=%s' % (phone, msg.replace(' ', '%20'))
+                first_name = rec.name.split()[0] if rec.name else ""
+                msg = f'Hola {first_name}, este es tu enlace de viáticos SGS: {rec.portal_url}'
+                rec.whatsapp_url = f'https://wa.me/{phone}?text={msg.replace(" ", "%20")}'
             else:
                 rec.whatsapp_url = ''
 
     @api.depends('initial_fund', 'deposit_ids.amount', 'service_ids.amount_total', 'service_ids.status', 'service_ids.is_late', 'fiscal_receipt_ids.amount')
     def _compute_amounts(self):
         for rec in self:
-            deposits = sum(rec.deposit_ids.mapped('amount'))
-            expenses = sum(rec.service_ids.filtered(lambda s: s.status != 'rejected').mapped('amount_total'))
-            fiscal = sum(rec.fiscal_receipt_ids.mapped('amount'))
-            pending = len(rec.service_ids.filtered(lambda s: s.status == 'pending'))
-            late = len(rec.service_ids.filtered(lambda s: s.is_late and s.status != 'approved'))
-            rejected = len(rec.service_ids.filtered(lambda s: s.status == 'rejected'))
+            # Optimización: sumas directas sobre los registros cargados en memoria de Odoo sin usar mapped
+            deposits = sum(d.amount for d in rec.deposit_ids)
+            expenses = sum(s.amount_total for s in rec.service_ids if s.status != 'rejected')
+            fiscal = sum(f.amount for f in rec.fiscal_receipt_ids)
+            
+            pending = sum(1 for s in rec.service_ids if s.status == 'pending')
+            late = sum(1 for s in rec.service_ids if s.is_late and s.status != 'approved')
+            rejected = sum(1 for s in rec.service_ids if s.status == 'rejected')
+            
             rec.total_deposits = deposits
             rec.total_expenses = expenses
             rec.total_fiscal = fiscal
             rec.balance = rec.initial_fund + deposits - expenses
             rec.pending_service_count = pending
             rec.late_service_count = late
+            
             if not rec.service_ids:
                 rec.compliance_state = 'blue'
             elif rejected or late:
@@ -109,10 +114,11 @@ class SgsPerdiemDeposit(models.Model):
     concept = fields.Char('Concepto', default='Depósito semanal viáticos')
     amount = fields.Monetary('Monto', currency_field='currency_id', required=True, tracking=True)
 
-    @api.depends('custodian_id', 'date', 'amount')
+    @api.depends('custodian_id.name', 'date', 'amount')
     def _compute_name(self):
         for rec in self:
-            rec.name = '%s · %s · $%0.2f' % (rec.custodian_id.name or 'Custodio', rec.date or '', rec.amount or 0.0)
+            custodian_name = rec.custodian_id.name or 'Custodio'
+            rec.name = f'{custodian_name} · {rec.date or ""} · ${rec.amount or 0.0:.2f}'
 
     @api.depends('date')
     def _compute_month(self):
@@ -155,7 +161,7 @@ class SgsVehicle(models.Model):
     @api.depends('brand', 'model', 'year', 'plate')
     def _compute_name(self):
         for rec in self:
-            rec.name = '%s %s %s · %s' % (rec.brand or '', rec.model or '', rec.year or '', rec.plate or '')
+            rec.name = f'{rec.brand or ""} {rec.model or ""} {rec.year or ""} · {rec.plate or ""}'.strip()
 
     @api.onchange('plate', 'brand', 'model')
     def _uppercase_vehicle(self):
@@ -211,7 +217,7 @@ class SgsRouteService(models.Model):
     @api.depends('amount_perdiem', 'amount_fuel', 'amount_lodging', 'amount_misc', 'toll_line_ids.amount')
     def _compute_total(self):
         for rec in self:
-            rec.amount_tolls = sum(rec.toll_line_ids.mapped('amount'))
+            rec.amount_tolls = sum(t.amount for t in rec.toll_line_ids)
             rec.amount_total = rec.amount_perdiem + rec.amount_fuel + rec.amount_lodging + rec.amount_misc + rec.amount_tolls
 
     @api.depends('date', 'submit_datetime')
@@ -219,7 +225,6 @@ class SgsRouteService(models.Model):
         for rec in self:
             if rec.date and rec.submit_datetime:
                 deadline = datetime.combine(rec.date, time.min) + timedelta(hours=36)
-                # Se usa el cierre del día del servicio + 12 horas como ventana práctica.
                 rec.is_late = rec.submit_datetime > deadline
             else:
                 rec.is_late = False
@@ -244,7 +249,7 @@ class SgsRouteService(models.Model):
                 cust = self.env['sgs.custodian'].browse(vals.get('custodian_id'))
                 seq = self.env['ir.sequence'].next_by_code('sgs.route.service') or '0001'
                 emp = cust.employee_number or str(cust.id or '')
-                vals['name'] = 'F-%s-%s' % (emp, seq)
+                vals['name'] = f'F-{emp}-{seq}'
             if vals.get('vehicle_id') and not vals.get('vehicle_snapshot'):
                 veh = self.env['sgs.vehicle'].browse(vals['vehicle_id'])
                 vals['vehicle_snapshot'] = veh.name
@@ -289,7 +294,7 @@ class SgsFiscalReceipt(models.Model):
     name = fields.Char('Referencia', compute='_compute_name', store=True)
     custodian_id = fields.Many2one('sgs.custodian', string='Custodio', required=True, ondelete='cascade', tracking=True)
     company_id = fields.Many2one(related='custodian_id.company_id', store=True, readonly=True)
-    currency_id = fields.Many2one(related='custodian_id.currency_id', readonly=True)
+    currency_id = fields.Many2one('sgs.currency_id', readonly=True)
     date = fields.Date('Fecha factura', required=True, default=fields.Date.context_today)
     amount = fields.Monetary('Monto', currency_field='currency_id', required=True, tracking=True)
     description = fields.Char('Concepto / descripción', required=True)
@@ -298,10 +303,12 @@ class SgsFiscalReceipt(models.Model):
     image = fields.Binary('Foto factura')
     image_filename = fields.Char('Archivo')
 
-    @api.depends('custodian_id', 'date', 'description')
+    @api.depends('custodian_id.name', 'date', 'description')
     def _compute_name(self):
         for rec in self:
-            rec.name = '%s · %s · %s' % (rec.custodian_id.name or 'Custodio', rec.date or '', rec.description or 'Factura')
+            custodian_name = rec.custodian_id.name or 'Custodio'
+            description_text = rec.description or 'Factura'
+            rec.name = f'{custodian_name} · {rec.date or ""} · {description_text}'
 
     @api.constrains('amount')
     def _check_amount(self):
