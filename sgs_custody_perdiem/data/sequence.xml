@@ -1,9 +1,0 @@
-<odoo noupdate="1">
-    <record id="seq_sgs_route_service" model="ir.sequence">
-        <field name="name">Folio servicio SGS</field>
-        <field name="code">sgs.route.service</field>
-        <field name="prefix"></field>
-        <field name="padding">4</field>
-        <field name="number_increment">1</field>
-    </record>
-</odoo>
