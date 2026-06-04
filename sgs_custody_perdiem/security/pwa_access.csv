@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sgs_push_subscription_user,sgs.push.subscription user,model_sgs_push_subscription,base.group_user,1,1,1,0
-access_sgs_push_subscription_manager,sgs.push.subscription manager,model_sgs_push_subscription,base.group_system,1,1,1,1
-access_sgs_push_notification_log_user,sgs.push.notification.log user,model_sgs_push_notification_log,base.group_user,1,0,0,0
-access_sgs_push_notification_log_manager,sgs.push.notification.log manager,model_sgs_push_notification_log,base.group_system,1,1,1,1
