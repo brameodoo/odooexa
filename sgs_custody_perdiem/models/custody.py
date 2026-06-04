@@ -294,7 +294,10 @@ class SgsFiscalReceipt(models.Model):
     name = fields.Char('Referencia', compute='_compute_name', store=True)
     custodian_id = fields.Many2one('sgs.custodian', string='Custodio', required=True, ondelete='cascade', tracking=True)
     company_id = fields.Many2one(related='custodian_id.company_id', store=True, readonly=True)
-    currency_id = fields.Many2one('sgs.currency_id', readonly=True)
+    
+    # LÍNEA CORREGIDA: Cambiado 'sgs.currency_id' por 'res.currency'
+    currency_id = fields.Many2one('res.currency', readonly=True)
+    
     date = fields.Date('Fecha factura', required=True, default=fields.Date.context_today)
     amount = fields.Monetary('Monto', currency_field='currency_id', required=True, tracking=True)
     description = fields.Char('Concepto / descripción', required=True)
@@ -302,6 +305,7 @@ class SgsFiscalReceipt(models.Model):
     provider_vat = fields.Char('RFC proveedor')
     image = fields.Binary('Foto factura')
     image_filename = fields.Char('Archivo')
+    
 
     @api.depends('custodian_id.name', 'date', 'description')
     def _compute_name(self):
