@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sgs_custodian_manager,sgs.custodian manager,model_sgs_custodian,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_deposit_manager,sgs.perdiem.deposit manager,model_sgs_perdiem_deposit,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_service_manager,sgs.route.service manager,model_sgs_route_service,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_toll_manager,sgs.toll.line manager,model_sgs_toll_line,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_fiscal_manager,sgs.fiscal.receipt manager,model_sgs_fiscal_receipt,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_vehicle_manager,sgs.vehicle manager,model_sgs_vehicle,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_client_manager,sgs.client manager,model_sgs_client,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
