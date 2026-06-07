@@ -1,7 +1,17 @@
 import base64
 import re
+import io
 from datetime import datetime
 import requests
+
+# Importación segura del extractor de PDFs nativo de Odoo
+try:
+    import pypdf
+except ImportError:
+    try:
+        import PyPDF2 as pypdf
+    except ImportError:
+        pypdf = False
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
@@ -13,8 +23,8 @@ class SgsBatchDepositWizard(models.TransientModel):
     file_ids = fields.Many2many('ir.attachment', string='Comprobantes de Pago (Banorte)', required=True)
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
-    def action_process_with_ia(self):
-        """ Envía cada archivo a la API de Google Cloud (Vision/Document) para extraer RFC, Fecha y Monto """
+    def action_process_deposits(self):
+        """ Procesa PDFs localmente en el servidor e imágenes vía Google Vision """
         self.ensure_one()
         self.line_ids.unlink()
         
@@ -25,7 +35,6 @@ class SgsBatchDepositWizard(models.TransientModel):
         lines_to_create = []
 
         for attachment in self.file_ids:
-            # 1. Inicialización de variables para evitar fallos de referencia local
             full_text = ""
             rfc = False
             amount = 0.0
@@ -35,40 +44,22 @@ class SgsBatchDepositWizard(models.TransientModel):
                 if not attachment.datas:
                     continue
                 
-                # Decodificar datos a base64 string limpio
-                base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
-                
-                # Determinar si es PDF o Imagen para ajustar la petición a Google
                 is_pdf = attachment.mimetype == 'application/pdf' or attachment.name.lower().endswith('.pdf')
                 
+                # --- RUTA A: COMPROBANTES PDF (Extracción Local Segura sin API Key) ---
                 if is_pdf:
-                    # Endpoint y Payload estructurado para archivos PDF en Google Cloud Vision
-                    url = f'https://vision.googleapis.com/v1/files:annotate?key={api_key}'
-                    payload = {
-                        "requests": [{
-                            "inputConfig": {
-                                "content": base64_data,
-                                "mimeType": "application/pdf"
-                            },
-                            "features": [{"type": "DOCUMENT_TEXT_DETECTION"}],
-                            "pages": [1] # Solo leemos la primera página del comprobante
-                        }]
-                    }
-                    response = requests.post(url, json=payload, timeout=30)
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        # Estructura de respuesta para archivos/PDFs
-                        responses = result.get('responses', [{}])[0].get('responses', [{}])
-                        if responses:
-                            full_text = responses[0].get('fullTextAnnotation', {}).get('text', '')
+                    if pypdf:
+                        pdf_bytes = base64.b64decode(attachment.datas)
+                        pdf_file = io.BytesIO(pdf_bytes)
+                        reader = pypdf.PdfReader(pdf_file)
+                        if len(reader.pages) > 0:
+                            full_text = reader.pages[0].extract_text()
                     else:
-                        note_err = f'Google Files API rechazó el PDF (Error {response.status_code})'
-                        if response.status_code == 400:
-                            note_err += ' - Verifique restricciones de la API Key.'
-                        raise ValidationError(note_err)
+                        raise ValidationError("La librería pypdf no está disponible en el entorno del servidor.")
+                
+                # --- RUTA B: FOTOS / IMÁGENES (Usa endpoint estándar compatible con tu API Key) ---
                 else:
-                    # Endpoint estándar para imágenes de toda la vida
+                    base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
                     url = f'https://vision.googleapis.com/v1/images:annotate?key={api_key}'
                     payload = {
                         "requests": [{
@@ -77,26 +68,24 @@ class SgsBatchDepositWizard(models.TransientModel):
                         }]
                     }
                     response = requests.post(url, json=payload, timeout=30)
-                    
                     if response.status_code == 200:
                         result = response.json()
                         text_annotations = result.get('responses', [{}])[0].get('textAnnotations', [])
                         if text_annotations:
                             full_text = text_annotations[0].get('description', '')
                     else:
-                        raise ValidationError(f'Google Images API rechazó la imagen (Error {response.status_code})')
+                        raise ValidationError(f'Google Vision rechazó la imagen (Error {response.status_code})')
 
-                # Si no pudimos extraer texto, brincamos al reporte de error de la línea
                 if not full_text:
                     lines_to_create.append((0, 0, {
                         'detected_rfc': 'SIN TEXTO',
                         'status': 'error',
-                        'notes': 'La IA no encontró texto legible o el formato del archivo no es soportado.',
+                        'notes': 'No se pudo extraer texto del archivo.',
                         'attachment_id': attachment.id
                     }))
                     continue
 
-                # --- Procesamiento Regex (Mismo motor tolerante para Banorte) ---
+                # --- Procesamiento Regex sobre texto plano ---
                 rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,\s"-\s]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
                 rfc = rfc_match.group(1).upper() if rfc_match else False
                 
@@ -106,11 +95,11 @@ class SgsBatchDepositWizard(models.TransientModel):
                 date_match = re.search(r'Fecha\s*Aplicación\s*[:,\s"-\s]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
                 if date_match:
                     try:
-                        date_val = datetime.strptime(date_match.group(1), '%d/%m/%Y').date()
+                        date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
                     except Exception:
                         pass
 
-                # --- Vinculación con los modelos de Odoo ---
+                # --- Mapeo e Inteligencia de Negocio ---
                 custodian = False
                 status = 'error'
                 note = 'RFC no encontrado en ningún empleado.'
@@ -125,13 +114,13 @@ class SgsBatchDepositWizard(models.TransientModel):
                         else:
                             note = f'Empleado {employee.name} hallado, pero no tiene ficha de Custodio SGS.'
                     else:
-                        note = f'RFC {rfc} detectado pero no está asignado a ningún empleado.'
+                        note = f'RFC {rfc} no asignado a ningún empleado en Recursos Humanos.'
                 else:
-                    note = 'No se localizó la sección de RFC Beneficiario en este documento de Banorte.'
+                    note = 'No se localizó la etiqueta RFC Beneficiario en el documento.'
 
                 lines_to_create.append((0, 0, {
                     'custodian_id': custodian.id if custodian else False,
-                    'detected_rfc': rfc or 'NO ENCONTRADO',
+                    'detected_rfc': rfc or 'NO DETECTADO',
                     'date': date_val,
                     'amount': amount,
                     'status': status,
@@ -149,13 +138,11 @@ class SgsBatchDepositWizard(models.TransientModel):
 
         self.write({'line_ids': lines_to_create})
         
-        # Redibujar la misma vista modal manteniendo el lote cargado
         action = self.env['ir.actions.act_window']._for_xml_id('sgs_custody_perdiem.action_sgs_batch_deposit_wizard')
         action['res_id'] = self.id
         return action
 
     def action_confirm_deposits(self):
-        """ Registra de forma definitiva los depósitos aprobados en la contabilidad interna del custodio """
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
         if not ready_lines:
@@ -179,7 +166,7 @@ class SgsBatchDepositWizard(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': _('Dispersión completada'),
-                'message': _('Se procesaron exitosamente %s depósitos de viáticos.') % created_count,
+                'message': _('Se procesaron exitosamente %s depósitos.') % created_count,
                 'type': 'success',
                 'sticky': False,
             }
