@@ -51,19 +51,24 @@ class SgsBatchDepositWizard(models.TransientModel):
                     full_text = text_annotations[0].get('description', '')
                     
                     # --- Análisis de Datos con Expresiones Regulares sobre el texto de Banorte ---
-                    # 1. Extraer RFC Beneficiario (Patrón estándar de RFC en México de 13 o 12 caracteres)
-                    rfc_match = re.search(r'RFC Beneficiario\s*,\s*"([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})"', full_text)
-                    rfc = rfc_match.group(1) if rfc_match else False
-                    
-                    # 2. Extraer Importe a Transferir (Eliminando caracteres de escape y $)
-                    amount_match = re.search(r'Importe a Transferir\s*,\s*"\s*\\?\$?([0-9,]+\.\d{2})"', full_text)
-                    amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
-                    
-                    # 3. Extraer Fecha de Aplicación
-                    date_match = re.search(r'Fecha Aplicación\s*,\s*"(\d{2}/\d{2}/\d{4})"', full_text)
-                    date_val = fields.Date.context_today(self)
-                    if date_match:
-                        date_val = datetime.strptime(date_match.group(1), '%d/%m/%m').date()
+                    # --- Regex ultra-flexibles y tolerantes para el formato de Banorte ---
+                
+                # 1. Busca el RFC quitando comillas opcionales, espacios y saltos de línea intermedios
+                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,\s"-\s]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
+                rfc = rfc_match.group(1).upper() if rfc_match else False
+                
+                # 2. Busca el Importe tolerando el signo de pesos escapado de los visores de PDF (\$)
+                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,\s"-\s]*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
+                
+                # 3. Busca la Fecha de Aplicación
+                date_match = re.search(r'Fecha\s*Aplicación\s*[:,\s"-\s]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                date_val = fields.Date.context_today(self)
+                if date_match:
+                    try:
+                        date_val = datetime.strptime(date_match.group(1), '%d/%m/%Y').date()
+                    except Exception:
+                        pass
 
                     # --- Mapeo Automático al Custodio por medio de su RFC ---
                     custodian = False
