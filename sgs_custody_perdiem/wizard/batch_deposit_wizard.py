@@ -86,7 +86,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                # --- Procesamiento Regex con Validación Estricta de Mexico
+                # --- Procesamiento Regex con Validación Estricta de Estructura Mexicana ---
                 
                 # 1. RFC: Forzamos a que tenga exactamente 6 dígitos numéricos centrales y 3 de homoclave
                 rfc_match = re.search(r'RFC\s*Beneficiario[\s\S]*?([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
