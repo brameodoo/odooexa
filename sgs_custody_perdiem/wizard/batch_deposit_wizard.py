@@ -86,19 +86,25 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                # --- Procesamiento Regex Ultra-Tolerante a Saltos de Línea (Banorte SPEI) ---
+                # --- Procesamiento Regex con Validación Estricta de Mexico
                 
-                # --- Procesamiento Regex Multilínea Optimizado para Banorte SPEI ---
-                
-                # 1. Buscar RFC Beneficiario (Busca la etiqueta y captura la primera cadena de caracteres de tipo RFC que encuentre después)
+                # 1. RFC: Forzamos a que tenga exactamente 6 dígitos numéricos centrales y 3 de homoclave
                 rfc_match = re.search(r'RFC\s*Beneficiario[\s\S]*?([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
-                rfc = rfc_match.group(1).upper() if rfc_match else False
+                if rfc_match:
+                    # Validamos que no sea un falso positivo corto como la clave de rastreo
+                    potential_rfc = rfc_match.group(1).upper()
+                    if len(potential_rfc) >= 12:
+                        rfc = potential_rfc
+                    else:
+                        rfc = False
+                else:
+                    rfc = False
                 
-                # 2. Buscar Importe a Transferir (Busca la etiqueta y captura la primera cifra con decimales que le siga)
-                amount_match = re.search(r'Importe\s*a\s*Transferir[\s\S]*?([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                # 2. Importe: Buscamos el monto asegurando que capture los dígitos posteriores al signo de pesos
+                amount_match = re.search(r'Importe\s*a\s*Transferir[\s\S]*?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
                 amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
                 
-                # 3. Buscar Fecha de Aplicación (Busca la etiqueta y captura la primera fecha DD/MM/YYYY que le siga)
+                # 3. Fecha de Aplicación
                 date_match = re.search(r'Fecha\s*Aplicación[\s\S]*?(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
                     
                 if date_match:
