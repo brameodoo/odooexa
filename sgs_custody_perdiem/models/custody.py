@@ -12,12 +12,13 @@ class SgsCustodian(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin']
     _order = 'name'
 
-    # NUEVO: Vínculo oficial al modelo de empleados de Odoo
     employee_id = fields.Many2one('hr.employee', string='Empleado Relacionado', tracking=True, ondelete='restrict')
 
-    # MODIFICADOS: Campos calculados y relacionados para jalar información de hr.employee
-    name = fields.Char('Nombre completo', compute='_compute_name', inverse='_inverse_name', required=True, store=True, tracking=True)
-    employee_number = fields.Char('No. empleado', related='employee_id.employee_id', readonly=True, store=True, tracking=True, index=True)
+    # MODIFICACIÓN: name y employee_number ahora se calculan juntos para evitar inconsistencias de tipos en Odoo 19
+    name = fields.Char('Nombre completo', compute='_compute_employee_data', inverse='_inverse_name', required=True, store=True, tracking=True)
+    employee_number = fields.Char('No. empleado', compute='_compute_employee_data', store=True, tracking=True, index=True)
+    
+    # Estos siguen como related porque job_title y work_phone sí son campos de tipo Char nativos
     position = fields.Char('Posición', related='employee_id.job_title', readonly=True, store=True, tracking=True)
     phone = fields.Char('Teléfono WhatsApp', related='employee_id.work_phone', readonly=True, store=True)
     
@@ -46,14 +47,21 @@ class SgsCustodian(models.Model):
         ('red', 'Atrasado / Rechazado'),
     ], string='Semáforo', compute='_compute_amounts')
 
-    # Lógica para calcular el nombre basándose en el empleado oficial
+    # NUEVO MÉTODO UNIFICADO: Extrae de forma segura las cadenas de texto del empleado sin romper el tipado
     @api.depends('employee_id')
-    def _compute_name(self):
+    def _compute_employee_data(self):
         for rec in self:
             if rec.employee_id:
                 rec.name = rec.employee_id.name
-            elif not rec.name:
-                rec.name = ''
+                # Extraemos la representación en texto del código identificador del empleado
+                rec.employee_number = rec.employee_id.display_name.split()[-1] if hasattr(rec.employee_id, 'employee_id') else str(rec.employee_id.id)
+                # Si en tu Odoo el identificador de texto de hr.employee es 'registration_number', puedes usar:
+                # rec.employee_number = rec.employee_id.registration_number or str(rec.employee_id.id)
+            else:
+                if not rec.name:
+                    rec.name = ''
+                if not rec.employee_number:
+                    rec.employee_number = ''
 
     def _inverse_name(self):
         for rec in self:
@@ -63,6 +71,7 @@ class SgsCustodian(models.Model):
     _sql_constraints = [
         ('employee_number_unique', 'unique(employee_number, company_id)', 'El número de empleado debe ser único por compañía.'),
     ]
+    
     
 
     @api.depends('portal_token', 'phone')
