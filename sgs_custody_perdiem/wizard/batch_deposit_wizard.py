@@ -86,26 +86,27 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                # --- Procesamiento Regex con Validación Estricta de Estructura Mexicana ---
+                # --- Solución Definitiva: Normalización de Texto y Coincidencia Directa Anclada ---
+                # Reemplazamos saltos de línea y múltiples espacios por un solo espacio en blanco
+                text_normalized = re.sub(r'\s+', ' ', full_text).strip()
                 
-                # 1. RFC: Forzamos a que tenga exactamente 6 dígitos numéricos centrales y 3 de homoclave
-                rfc_match = re.search(r'RFC\s*Beneficiario[\s\S]*?([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
-                if rfc_match:
-                    # Validamos que no sea un falso positivo corto como la clave de rastreo
-                    potential_rfc = rfc_match.group(1).upper()
-                    if len(potential_rfc) >= 12:
-                        rfc = potential_rfc
-                    else:
-                        rfc = False
-                else:
-                    rfc = False
+                # 1. Extracción del RFC Beneficiario (Anclado estrictamente a la etiqueta)
+                # Admite espacios, dos puntos o caracteres especiales comunes del OCR entre la etiqueta y el valor
+                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,"-]*\s*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', text_normalized, re.IGNORECASE)
+                rfc = rfc_match.group(1).upper() if rfc_match else False
                 
-                # 2. Importe: Buscamos el monto asegurando que capture los dígitos posteriores al signo de pesos
-                amount_match = re.search(r'Importe\s*a\s*Transferir[\s\S]*?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                # 2. Extracción del Importe a Transferir (Tolerando el signo de pesos '$' y comas de miles)
+                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,"-]*\s*\\?\$?\s*([0-9,]+\.\d{2})', text_normalized, re.IGNORECASE)
                 amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
                 
-                # 3. Fecha de Aplicación
-                date_match = re.search(r'Fecha\s*Aplicación[\s\S]*?(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                # 3. Extracción de la Fecha de Aplicación
+                date_match = re.search(r'Fecha\s*Aplicación\s*[:,"-]*\s*(\d{2}/\d{2}/\d{4})', text_normalized, re.IGNORECASE)
+                if date_match:
+                    try:
+                        date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
+                    except Exception:
+                        pass
+                        
                     
                 if date_match:
                     try:
