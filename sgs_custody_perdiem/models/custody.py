@@ -229,8 +229,8 @@ class SgsRouteService(models.Model):
     amount_lodging = fields.Monetary('Hospedaje', currency_field='currency_id', default=0.0)
     amount_misc = fields.Monetary('Gastos varios', currency_field='currency_id', default=0.0)
     misc_detail = fields.Char('Especificación gastos varios')
-    toll_line_ids = fields.One2many('sgs.toll.line', 'service_id', string='Casetas')
-    amount_tolls = fields.Monetary('Casetas', compute='_compute_total', currency_field='currency_id', store=True)
+    toll_line_ids = fields.One2many('sgs.toll.line', 'service_id', string='Detalle de Casetas')
+    amount_tolls = fields.Monetary('Total Casetas', compute='_compute_total', currency_field='currency_id', store=True)
     amount_total = fields.Monetary('Total servicio', compute='_compute_total', currency_field='currency_id', store=True)
 
     evidence_image = fields.Binary('Evidencia general')
