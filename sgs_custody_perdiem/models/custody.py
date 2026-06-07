@@ -68,9 +68,12 @@ class SgsCustodian(models.Model):
             if rec.employee_id and not rec.employee_id.name:
                 rec.employee_id.name = rec.name
 
-    _sql_constraints = [
-        ('employee_number_unique', 'unique(employee_number, company_id)', 'El número de empleado debe ser único por compañía.'),
-    ]
+# NUEVA SINTAXIS NATIVA PARA RESTRICCIONES EN ODOO 19
+    class Constraint:
+        _name = 'employee_number_unique'
+        _type = 'unique'
+        _fields = ['employee_number', 'company_id']
+        _message = 'El número de empleado debe ser único por compañía.'
     
     
 
