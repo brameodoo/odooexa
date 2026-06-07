@@ -12,10 +12,15 @@ class SgsCustodian(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin']
     _order = 'name'
 
-    name = fields.Char('Nombre completo', required=True, tracking=True)
-    employee_number = fields.Char('No. empleado', tracking=True, index=True)
-    position = fields.Char('Posición', tracking=True)
-    phone = fields.Char('Teléfono WhatsApp')
+    # NUEVO: Vínculo oficial al modelo de empleados de Odoo
+    employee_id = fields.Many2one('hr.employee', string='Empleado Relacionado', tracking=True, ondelete='restrict')
+
+    # MODIFICADOS: Campos calculados y relacionados para jalar información de hr.employee
+    name = fields.Char('Nombre completo', compute='_compute_name', inverse='_inverse_name', required=True, store=True, tracking=True)
+    employee_number = fields.Char('No. empleado', related='employee_id.employee_id', readonly=True, store=True, tracking=True, index=True)
+    position = fields.Char('Posición', related='employee_id.job_title', readonly=True, store=True, tracking=True)
+    phone = fields.Char('Teléfono WhatsApp', related='employee_id.work_phone', readonly=True, store=True)
+    
     active = fields.Boolean(default=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
     currency_id = fields.Many2one('res.currency', related='company_id.currency_id', readonly=True)
@@ -41,9 +46,24 @@ class SgsCustodian(models.Model):
         ('red', 'Atrasado / Rechazado'),
     ], string='Semáforo', compute='_compute_amounts')
 
+    # Lógica para calcular el nombre basándose en el empleado oficial
+    @api.depends('employee_id')
+    def _compute_name(self):
+        for rec in self:
+            if rec.employee_id:
+                rec.name = rec.employee_id.name
+            elif not rec.name:
+                rec.name = ''
+
+    def _inverse_name(self):
+        for rec in self:
+            if rec.employee_id and not rec.employee_id.name:
+                rec.employee_id.name = rec.name
+
     _sql_constraints = [
         ('employee_number_unique', 'unique(employee_number, company_id)', 'El número de empleado debe ser único por compañía.'),
     ]
+    
 
     @api.depends('portal_token', 'phone')
     def _compute_portal_url(self):
