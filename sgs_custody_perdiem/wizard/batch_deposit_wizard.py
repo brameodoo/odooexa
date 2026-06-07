@@ -86,19 +86,27 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                # --- Procesamiento Regex Corregido (Guion al final de 
+                # --- Procesamiento Regex Ultra-Tolerante a Saltos de Línea (Banorte SPEI) ---
                 
-                # 1. Buscar RFC Beneficiario
-                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,\s"\s-]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
+                # 1. Buscar RFC Beneficiario (Permite encontrarlo si está en la línea siguiente)
+                rfc_match = re.search(r'RFC\s*Beneficiario\s*[\s:,"-]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
+                if not rfc_match:
+                    # Alternativa si el RFC se movió a la línea de abajo en el volcado de texto
+                    rfc_match = re.search(r'RFC\s*Beneficiario\s*\n\s*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
                 rfc = rfc_match.group(1).upper() if rfc_match else False
                 
-                # 2. Buscar Importe a Transferir
-                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,\s"\s-]*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                # 2. Buscar Importe a Transferir (Tolerando signo de pesos y saltos de línea)
+                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[\s:,"-]*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                if not amount_match:
+                    # Alternativa si el monto está abajo de la etiqueta
+                    amount_match = re.search(r'Importe\s*a\s*Transferir\s*\n\s*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
                 amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
                 
                 # 3. Buscar Fecha de Aplicación
-                date_match = re.search(r'Fecha\s*Aplicación\s*[:,\s"\s-]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
-                
+                date_match = re.search(r'Fecha\s*Aplicación\s*[\s:,"-]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                if not date_match:
+                    date_match = re.search(r'Fecha\s*Aplicación\s*\n\s*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                    
                 if date_match:
                     try:
                         date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
