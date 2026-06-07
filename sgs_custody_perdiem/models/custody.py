@@ -167,9 +167,12 @@ class SgsClient(models.Model):
     name = fields.Char('Cliente / Razón social', required=True)
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [('name_unique', 'unique(name)', 'El cliente ya existe.')]
-
-
+class Constraint:
+        _name = 'name_unique'
+        _type = 'unique'
+        _fields = ['name']
+        _message = 'El cliente ya existe.'
+    
 class SgsVehicle(models.Model):
     _name = 'sgs.vehicle'
     _description = 'Vehículo SGS'
