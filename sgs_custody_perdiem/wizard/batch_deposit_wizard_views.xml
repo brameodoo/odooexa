@@ -28,12 +28,12 @@
                         </page>
                     </notebook>
                 </sheet>
-                <footer>
-                    <button name="action_process_with_ia" type="object" string="Procesar con IA" class="btn-primary" invisible="line_ids"/>
-                    <button name="action_process_with_ia" type="object" string="Re-procesar Lote" class="btn-secondary" invisible="not line_ids"/>
-                    <button name="action_confirm_deposits" type="object" string="Validar y Dispersar Viáticos" class="btn-success" invisible="not line_ids"/>
-                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
-                </footer>
+                    <footer>
+                        <button name="action_process_deposits" type="object" string="Procesar con IA" class="btn-primary" invisible="line_ids"/>
+                        <button name="action_process_deposits" type="object" string="Re-procesar Lote" class="btn-secondary" invisible="not line_ids"/>
+                        <button name="action_confirm_deposits" type="object" string="Validar y Dispersar Viáticos" class="btn-success" invisible="not line_ids"/>
+                        <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                    </footer>
             </form>
         </field>
     </record>
