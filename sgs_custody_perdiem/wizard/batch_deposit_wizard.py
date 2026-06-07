@@ -86,13 +86,19 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,\s"-\s]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
+                # --- Procesamiento Regex Corregido (Guion al final de 
+                
+                # 1. Buscar RFC Beneficiario
+                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,\s"\s-]*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', full_text, re.IGNORECASE)
                 rfc = rfc_match.group(1).upper() if rfc_match else False
                 
-                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,\s"-\s]*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
+                # 2. Buscar Importe a Transferir
+                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,\s"\s-]*\\?\$?\s*([0-9,]+\.\d{2})', full_text, re.IGNORECASE)
                 amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
                 
-                date_match = re.search(r'Fecha\s*Aplicación\s*[:,\s"-\s]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                # 3. Buscar Fecha de Aplicación
+                date_match = re.search(r'Fecha\s*Aplicación\s*[:,\s"\s-]*(\d{2}/\d{2}/\d{4})', full_text, re.IGNORECASE)
+                
                 if date_match:
                     try:
                         date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
