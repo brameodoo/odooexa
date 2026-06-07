@@ -6,3 +6,5 @@ access_sgs_toll_manager,sgs.toll.line manager,model_sgs_toll_line,sgs_custody_pe
 access_sgs_fiscal_manager,sgs.fiscal.receipt manager,model_sgs_fiscal_receipt,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_vehicle_manager,sgs.vehicle manager,model_sgs_vehicle,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
 access_sgs_client_manager,sgs.client manager,model_sgs_client,sgs_custody_perdiem.group_sgs_manager,1,1,1,1
+access_sgs_batch_deposit_wizard,sgs.batch.deposit.wizard,model_sgs_batch_deposit_wizard,base.group_user,1,1,1,1
+access_sgs_batch_deposit_wizard_line,sgs.batch.deposit.wizard.line,model_sgs_batch_deposit_wizard_line,base.group_user,1,1,1,1
