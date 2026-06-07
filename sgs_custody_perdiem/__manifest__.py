@@ -12,7 +12,7 @@ Módulo para administrar custodios de vehículos pesados, depósitos de viático
     'author': 'Manus AI',
     'website': 'https://www.odoo.com',
     'license': 'LGPL-3',
-    'depends': ['base', 'web', 'mail', 'portal'],
+    'depends': ['base', 'web', 'mail', 'hr', 'portal'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
