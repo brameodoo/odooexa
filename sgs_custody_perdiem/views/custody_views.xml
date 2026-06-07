@@ -47,7 +47,7 @@
         </field>
     </record>
 
-    <record id="view_sgs_custodian_form" model="ir.ui.view">
+<record id="view_sgs_custodian_form" model="ir.ui.view">
         <field name="name">sgs.custodian.form</field>
         <field name="model">sgs.custodian</field>
         <field name="arch" type="xml">
@@ -57,15 +57,19 @@
                     <button name="action_regenerate_portal_token" type="object" string="Regenerar token" class="btn-secondary" confirm="El enlace anterior dejará de funcionar. ¿Continuar?"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><h1><field name="name" placeholder="Nombre del custodio"/></h1></div>
+                    <div class="oe_title">
+                        <label for="name" string="Nombre del Custodio"/>
+                        <h1><field name="name" placeholder="Nombre del custodio"/></h1>
+                    </div>
                     <group>
-                        <group>
+                        <group string="Vinculación de Personal">
+                            <field name="employee_id" placeholder="Vincular con empleado oficial..."/>
                             <field name="employee_number"/>
                             <field name="position"/>
                             <field name="phone"/>
                             <field name="initial_fund"/>
                         </group>
-                        <group>
+                        <group string="Resumen Financiero">
                             <field name="total_deposits" readonly="1"/>
                             <field name="total_expenses" readonly="1"/>
                             <field name="total_fiscal" readonly="1"/>
@@ -78,15 +82,48 @@
                         <field name="whatsapp_url" readonly="1" widget="url"/>
                     </group>
                     <notebook>
-                        <page string="Depósitos"><field name="deposit_ids"><list editable="bottom"><field name="date"/><field name="week"/><field name="concept"/><field name="amount"/></list></field></page>
-                        <page string="Servicios"><field name="service_ids"><list><field name="name"/><field name="date"/><field name="client_id"/><field name="origin"/><field name="destination"/><field name="amount_total"/><field name="status" widget="badge"/><field name="is_late"/></list></field></page>
-                        <page string="Comprobantes fiscales"><field name="fiscal_receipt_ids"><list editable="bottom"><field name="date"/><field name="description"/><field name="provider"/><field name="provider_vat"/><field name="amount"/></list></field></page>
+                        <page string="Depósitos" name="page_deposits">
+                            <field name="deposit_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="week"/>
+                                    <field name="concept"/>
+                                    <field name="amount" sum="Total Depósitos"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Servicios" name="page_services">
+                            <field name="service_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="client_id"/>
+                                    <field name="origin"/>
+                                    <field name="destination"/>
+                                    <field name="amount_total" sum="Total Servicios"/>
+                                    <field name="status" widget="badge"/>
+                                    <field name="is_late" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Comprobantes fiscales" name="page_fiscal_receipts">
+                            <field name="fiscal_receipt_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="description"/>
+                                    <field name="provider"/>
+                                    <field name="provider_vat"/>
+                                    <field name="amount" sum="Total Fiscal"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
+    
 
     <record id="view_sgs_service_list" model="ir.ui.view">
         <field name="name">sgs.route.service.list</field>
