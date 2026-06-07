@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sgs_batch_deposit_wizard_form" model="ir.ui.view">
+        <field name="name">sgs.batch.deposit.wizard.form</field>
+        <field name="model">sgs.batch.deposit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Carga Masiva de Viáticos - Banorte">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Instrucciones:</strong> Suba o arrastre los comprobantes de transferencia de Banorte. La IA buscará el RFC del empleado en la lista de nómina oficial para asignarle su depósito de manera automática.
+                    </div>
+                    <group>
+                        <field name="file_ids" widget="many2many_binary" string="Subir comprobantes (PDF / Imágenes)" placeholder="Arrastre sus archivos aquí..."/>
+                    </group>
+                    
+                    <notebook invisible="not line_ids">
+                        <page string="Depósitos Extraídos por la IA" name="page_lines">
+                            <field name="line_ids" readonly="0">
+                                <list editable="bottom" decoration-success="status == 'ready'" decoration-danger="status == 'error'">
+                                    <field name="custodian_id" options="{'no_create': True}"/>
+                                    <field name="detected_rfc" readonly="1"/>
+                                    <field name="date"/>
+                                    <field name="amount" sum="Total Lote"/>
+                                    <field name="status" widget="badge" decoration-success="status == 'ready'" decoration-danger="status == 'error'"/>
+                                    <field name="notes" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_process_with_ia" type="object" string="Procesar con IA" class="btn-primary" invisible="line_ids"/>
+                    <button name="action_process_with_ia" type="object" string="Re-procesar Lote" class="btn-secondary" invisible="not line_ids"/>
+                    <button name="action_confirm_deposits" type="object" string="Validar y Dispersar Viáticos" class="btn-success" invisible="not line_ids"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sgs_batch_deposit_wizard" model="ir.actions.act_window">
+        <field name="name">Carga Masiva de Viáticos</field>
+        <field name="res_model">sgs.batch.deposit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_sgs_batch_deposit" name="Carga Masiva (IA)" parent="menu_sgs_finance" action="action_sgs_batch_deposit_wizard" sequence="15"/>
+</odoo>
