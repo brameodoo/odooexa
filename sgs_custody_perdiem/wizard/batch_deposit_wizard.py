@@ -86,26 +86,56 @@ class SgsBatchDepositWizard(models.TransientModel):
                     continue
 
                 # --- Procesamiento Regex sobre texto plano ---
-                # --- Solución Definitiva: Normalización de Texto y Coincidencia Directa Anclada ---
-                # Reemplazamos saltos de línea y múltiples espacios por un solo espacio en blanco
-                text_normalized = re.sub(r'\s+', ' ', full_text).strip()
-                
-                # 1. Extracción del RFC Beneficiario (Anclado estrictamente a la etiqueta)
-                # Admite espacios, dos puntos o caracteres especiales comunes del OCR entre la etiqueta y el valor
-                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,"-]*\s*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', text_normalized, re.IGNORECASE)
-                rfc = rfc_match.group(1).upper() if rfc_match else False
-                
-                # 2. Extracción del Importe a Transferir (Tolerando el signo de pesos '$' y comas de miles)
-                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,"-]*\s*\\?\$?\s*([0-9,]+\.\d{2})', text_normalized, re.IGNORECASE)
-                amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
-                
-                # 3. Extracción de la Fecha de Aplicación
-                date_match = re.search(r'Fecha\s*Aplicación\s*[:,"-]*\s*(\d{2}/\d{2}/\d{4})', text_normalized, re.IGNORECASE)
+                # --- Extracción Secuencial Estructurada por Líneas (Banorte SPEI) ---
+lines = [line.strip() for line in full_text.splitlines() if line.strip()]
+
+# Inicialización segura
+rfc = None
+amount = 0.0
+date_val = None
+
+# 1. RFC Beneficiario
+for index, line in enumerate(lines):
+    if 'RFC Beneficiario' in line:
+        for offset in [1, 2]:
+            if index + offset < len(lines):
+                potential_line = lines[index + offset]
+                rfc_match = re.search(r'\b([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})\b', potential_line, re.IGNORECASE)
+                if rfc_match:
+                    rfc = rfc_match.group(1).upper()
+                    break
+        if rfc:
+            break
+
+# 2. Importe a Transferir
+for index, line in enumerate(lines):
+    if 'Importe a Transferir' in line:
+        for offset in [1, 2]:
+            if index + offset < len(lines):
+                potential_line = lines[index + offset]
+                amount_match = re.search(r'([0-9,]+\.\d{2})', potential_line)
+                if amount_match:
+                    amount = float(amount_match.group(1).replace(',', ''))
+                    break
+        if amount > 0.0:
+            break
+
+# 3. Fecha de Aplicación
+for index, line in enumerate(lines):
+    if 'Fecha Aplicación' in line:
+        for offset in [1, 2]:
+            if index + offset < len(lines):
+                potential_line = lines[index + offset]
+                date_match = re.search(r'(\d{2}/\d{2}/\d{4})', potential_line)
                 if date_match:
                     try:
                         date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Error parsing date: {e}")
+                    break
+        if date_val:
+            break
+
                         
                     
                 if date_match:
