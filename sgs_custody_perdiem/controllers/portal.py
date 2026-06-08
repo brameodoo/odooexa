@@ -18,7 +18,7 @@ class SgsCustodyPortal(http.Controller):
             raise NotFound()
         return custodian
 
-@http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
+    @http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
     def custodian_home(self, token, **kw):
         """ Ruta principal del portal - Carga empleados y flota oficial de Odoo """
         custodian = self._get_custodian(token)
@@ -27,12 +27,12 @@ class SgsCustodyPortal(http.Controller):
         fiscal = request.env['sgs.fiscal.receipt'].sudo().search([('custodian_id', '=', custodian.id)], limit=10, order='date desc, id desc')
         clients = request.env['sgs.client'].sudo().search([('active', '=', True)], order='name')
         
-        # --- NUEVO: Buscar vehículos directamente desde el módulo de Flota (fleet.vehicle) ---
-        # Filtramos por vehículos activos y los ordenamos por su placa (license_plate)
+        # Buscar vehículos directamente desde el módulo de Flota (fleet.vehicle)
         vehicles = request.env['fleet.vehicle'].sudo().search([
             ('active', '=', True)
         ], order='license_plate')
         
+        # Buscar empleados activos excluyendo al propio custodio logueado
         employees = request.env['hr.employee'].sudo().search([
             ('active', '=', True),
             ('id', '!=', custodian.employee_id.id)
@@ -44,7 +44,7 @@ class SgsCustodyPortal(http.Controller):
             'deposits': deposits,
             'fiscal_receipts': fiscal,
             'clients': clients,
-            'vehicles': vehicles, # Enviamos la lista de vehículos de Flota
+            'vehicles': vehicles,
             'employees': employees,
             'token': token,
             'format_amount': self._format_amount,
@@ -52,19 +52,16 @@ class SgsCustodyPortal(http.Controller):
 
     @http.route(['/sgs/custodio/<string:token>/servicio'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_service(self, token, **post):
-        """ Procesa el servicio vinculando el ID del vehículo de flota si tu modelo lo requiere """
+        """ Procesa el servicio vinculando el ID del vehículo de flota y compañero """
         custodian = self._get_custodian(token)
         client = False
         if post.get('client_id'):
             client = request.env['sgs.client'].sudo().browse(int(post['client_id']))
             
-        # --- NUEVO: Mapear el ID del vehículo seleccionado desde la Flota de Odoo ---
         vehicle_id_val = False
         if post.get('vehicle_id'):
             fleet_vehicle = request.env['fleet.vehicle'].sudo().browse(int(post['vehicle_id']))
             if fleet_vehicle.exists():
-                # NOTA: Si tu campo 'vehicle_id' en sgs.route.service todavía apunta al modelo viejo 'sgs.vehicle',
-                # podemos guardar el ID directamente aquí (asumiendo que actualizaste el Many2one a 'fleet.vehicle').
                 vehicle_id_val = fleet_vehicle.id
 
         companion_text = "Voy solo"
@@ -80,7 +77,7 @@ class SgsCustodyPortal(http.Controller):
             'origin': post.get('origin'),
             'destination': post.get('destination'),
             'companion': companion_text,
-            'vehicle_id': vehicle_id_val, # Guardamos la relación
+            'vehicle_id': vehicle_id_val,
             'comments': post.get('comments'),
             'amount_perdiem': float(post.get('amount_perdiem') or 0),
             'amount_fuel': float(post.get('amount_fuel') or 0),
@@ -111,7 +108,7 @@ class SgsCustodyPortal(http.Controller):
             request.env['sgs.toll.line'].sudo().create(line_vals)
             
         return request.redirect('/sgs/custodio/%s?ok=servicio' % token)
-        
+
     @http.route(['/sgs/custodio/<string:token>/fiscal'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_fiscal(self, token, **post):
         custodian = self._get_custodian(token)
