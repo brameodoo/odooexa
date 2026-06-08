@@ -218,6 +218,8 @@ class SgsRouteService(models.Model):
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo')
     
     date = fields.Date('Fecha del servicio', required=True, default=fields.Date.context_today, tracking=True)
+    start_datetime = fields.Datetime('Inicio del servicio', tracking=True)
+    end_datetime = fields.Datetime('Término del servicio', tracking=True)
     submit_datetime = fields.Datetime('Fecha/hora de captura', default=fields.Datetime.now, readonly=True)
     client_id = fields.Many2one('sgs.client', string='Cliente')
     origin = fields.Char('Origen')
