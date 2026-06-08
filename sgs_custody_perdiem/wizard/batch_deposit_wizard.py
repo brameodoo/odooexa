@@ -24,7 +24,7 @@ class SgsBatchDepositWizard(models.TransientModel):
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
     def action_process_deposits(self):
-        """ Extrae datos con OpenAI y valida duplicados únicamente contra depósitos confirmados """
+        """ Extrae el texto del PDF y usa OpenAI con fallback visual inteligente """
         self.ensure_one()
         self.line_ids.unlink()
         
@@ -62,7 +62,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     "messages": [
                         {
                             "role": "system",
-                            "content": "Eres un asistente experto en contabilidad mexicana. Tu trabajo es extraer el RFC del BENEFICIARIO (LONGITUD 12 o 13 caracteres), el IMPORTE A TRANSFERIR (como número flotante), la FECHA DE APLICACIÓN (en formato YYYY-MM-DD) y la CLAVE DE RASTREO completa desde un comprobante SPEI de Banorte. Responde estrictamente en formato JSON con las llaves: rfc, amount, date, tracking_key."
+                            "content": "Eres un asistente experto en contabilidad mexicana. Tu trabajo es extraer el RFC del BENEFICIARIO (LONGITUD 12 o 13 caracteres, ignorando estrictamente claves de rastreo), el IMPORTE A TRANSFERIR (como número flotante) y la FECHA DE APLICACIÓN (en formato YYYY-MM-DD) desde un comprobante SPEI de Banorte. Responde estrictamente en formato JSON con las llaves: rfc, amount, date."
                         },
                         {
                             "role": "user",
@@ -77,7 +77,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
                     mimetype = attachment.mimetype if attachment.mimetype else "application/pdf" if is_pdf else "image/png"
                     payload["messages"][1]["content"] = [
-                        {"type": "text", "text": "Extrae el rfc, amount, date y tracking_key de este comprobante:"},
+                        {"type": "text", "text": "Extrae el rfc, amount y date de este comprobante de Banorte analizando visualmente el archivo adjunto:"},
                         {"type": "image_url", "image_url": {"url": f"data:{mimetype};base64,{base64_data}"}}
                     ]
 
@@ -91,7 +91,6 @@ class SgsBatchDepositWizard(models.TransientModel):
 
                 rfc = ai_content.get('rfc', '').strip().upper() if ai_content.get('rfc') else False
                 amount = float(ai_content.get('amount', 0.0))
-                tracking_key = ai_content.get('tracking_key', '').strip()
                 
                 date_val = fields.Date.context_today(self)
                 if ai_content.get('date'):
@@ -99,23 +98,6 @@ class SgsBatchDepositWizard(models.TransientModel):
                         date_val = fields.Date.from_string(ai_content.get('date')[:10])
                     except Exception:
                         pass
-
-                # --- CANDADO REAL: Validación contra depósitos definitivos confirmados ---
-                if tracking_key:
-                    existing_deposit = self.env['sgs.perdiem.deposit'].search([
-                        ('tracking_key', '=', tracking_key)
-                    ], limit=1)
-                    if existing_deposit:
-                        lines_to_create.append((0, 0, {
-                            'detected_rfc': rfc or 'ERROR',
-                            'date': date_val,
-                            'amount': amount,
-                            'status': 'error',
-                            'notes': f'Duplicado Bancario: La clave de rastreo SPEI {tracking_key} ya fue dispersada en contabilidad anteriormente.',
-                            'attachment_id': attachment.id,
-                            'attachment_checksum': attachment.checksum
-                        }))
-                        continue
 
                 custodian = False
                 status = 'error'
@@ -145,9 +127,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     'amount': amount,
                     'status': status,
                     'notes': note,
-                    'attachment_id': attachment.id,
-                    'attachment_checksum': attachment.checksum,
-                    'tracking_key': tracking_key
+                    'attachment_id': attachment.id
                 }))
 
             except Exception as e:
@@ -155,8 +135,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     'detected_rfc': 'ERROR',
                     'status': 'error',
                     'notes': str(e),
-                    'attachment_id': attachment.id,
-                    'attachment_checksum': attachment.checksum
+                    'attachment_id': attachment.id
                 }))
 
         self.write({'line_ids': lines_to_create})
@@ -166,7 +145,7 @@ class SgsBatchDepositWizard(models.TransientModel):
         return action
 
     def action_confirm_deposits(self):
-        """ Método de confirmación alineado con precisión a nivel de clase """
+        """ Método de confirmación con alineación e indentación corregidas """
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
         if not ready_lines:
@@ -181,8 +160,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                 'date': line.date,
                 'amount': line.amount,
                 'concept': f'Dispersión masiva Banorte - Ref: {line.detected_rfc}',
-                'week': f'Semana {datetime.now().isocalendar()[1]}',
-                'tracking_key': line.tracking_key
+                'week': f'Semana {datetime.now().isocalendar()[1]}'
             })
             created_count += 1
 
@@ -207,8 +185,6 @@ class SgsBatchDepositWizardLine(models.TransientModel):
     date = fields.Date('Fecha Pago')
     amount = fields.Float('Monto ($)')
     attachment_id = fields.Many2one('ir.attachment', string='Archivo de Origen')
-    attachment_checksum = fields.Char('Hash del Archivo')
-    tracking_key = fields.Char('Clave de Rastreo')
     status = fields.Selection([
         ('ready', 'Listo para procesar'),
         ('error', 'Error / Incompleto')
