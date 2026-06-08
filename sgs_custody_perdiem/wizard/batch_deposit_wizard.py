@@ -87,55 +87,66 @@ class SgsBatchDepositWizard(models.TransientModel):
 
                 # --- Procesamiento Regex sobre texto plano ---
                 # --- Extracción Secuencial Estructurada por Líneas (Banorte SPEI) ---
-                # --- Extracción Secuencial Estructurada por Líneas (Banorte SPEI) ---
-                lines = [line.strip() for line in full_text.splitlines() if line.strip()]
+                def extract_spei_data(full_text):
+                    lines = [line.strip() for line in full_text.splitlines() if line.strip()]
+                    
+                    result = {
+                        "rfc": None,
+                        "amount": 0.0,
+                        "date": None,
+                        "diagnostic": []
+                    }
                 
-                # Inicialización segura
-                rfc = None
-                amount = 0.0
-                date_val = None
+                    # 1. RFC Beneficiario
+                    for index, line in enumerate(lines):
+                        if "RFC" in line.upper() and "BENEFICIARIO" in line.upper():
+                            for offset in [0, 1, 2]:
+                                if index + offset < len(lines):
+                                    potential_line = lines[index + offset]
+                                    normalized = potential_line.replace(" ", "").upper()
+                                    rfc_match = re.search(r"\b([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})\b", normalized)
+                                    if rfc_match:
+                                        result["rfc"] = rfc_match.group(1)
+                                        break
+                            if result["rfc"]:
+                                break
+                    if not result["rfc"]:
+                        result["diagnostic"].append("No se localizó RFC Beneficiario.")
                 
-                # 1. RFC Beneficiario
-                for index, line in enumerate(lines):
-                    if 'RFC Beneficiario' in line:
-                        for offset in [1, 2]:
-                            if index + offset < len(lines):
-                                potential_line = lines[index + offset]
-                                rfc_match = re.search(r'\b([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})\b', potential_line, re.IGNORECASE)
-                                if rfc_match:
-                                    rfc = rfc_match.group(1).upper()
-                                    break
-                        if rfc:
-                            break
+                    # 2. Importe a Transferir
+                    for index, line in enumerate(lines):
+                        if "IMPORTE" in line.upper() and "TRANSFERIR" in line.upper():
+                            for offset in [0, 1, 2]:
+                                if index + offset < len(lines):
+                                    potential_line = lines[index + offset]
+                                    amount_match = re.search(r"([0-9,]+\.\d{2})", potential_line)
+                                    if amount_match:
+                                        result["amount"] = float(amount_match.group(1).replace(",", ""))
+                                        break
+                            if result["amount"] > 0.0:
+                                break
+                    if result["amount"] == 0.0:
+                        result["diagnostic"].append("No se detectó Importe a Transferir.")
                 
-                # 2. Importe a Transferir
-                for index, line in enumerate(lines):
-                    if 'Importe a Transferir' in line:
-                        for offset in [1, 2]:
-                            if index + offset < len(lines):
-                                potential_line = lines[index + offset]
-                                amount_match = re.search(r'([0-9,]+\.\d{2})', potential_line)
-                                if amount_match:
-                                    amount = float(amount_match.group(1).replace(',', ''))
-                                    break
-                        if amount > 0.0:
-                            break
+                    # 3. Fecha de Aplicación
+                    for index, line in enumerate(lines):
+                    if "FECHA" in line.upper() and "APLICACION" in line.upper():
+                            for offset in [0, 1, 2]:
+                                if index + offset < len(lines):
+                                    potential_line = lines[index + offset]
+                                    date_match = re.search(r"(\d{2}/\d{2}/\d{4})", potential_line)
+                                    if date_match:
+                                        try:
+                                            result["date"] = datetime.strptime(date_match.group(1), "%d/%m/%Y").date()
+                                        except Exception as e:
+                                            result["diagnostic"].append(f"Error al parsear fecha: {e}")
+                                        break
+                            if result["date"]:
+                                break
+                    if not result["date"]:
+                        result["diagnostic"].append("No se detectó Fecha de Aplicación.")
                 
-                # 3. Fecha de Aplicación
-                for index, line in enumerate(lines):
-                    if 'Fecha Aplicación' in line:
-                        for offset in [1, 2]:
-                            if index + offset < len(lines):
-                                potential_line = lines[index + offset]
-                                date_match = re.search(r'(\d{2}/\d{2}/\d{4})', potential_line)
-                                if date_match:
-                                    try:
-                                        date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
-                                    except Exception as e:
-                                        print(f"Error parsing date: {e}")
-                                    break
-                        if date_val:
-                            break
+                    return result
 ###
                         
                     
