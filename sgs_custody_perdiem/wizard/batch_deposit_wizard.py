@@ -145,7 +145,7 @@ class SgsBatchDepositWizard(models.TransientModel):
         return action
 
     def action_confirm_deposits(self):
-        """ Método de confirmación con alineación e indentación corregidas """
+        """ Método de confirmación limpio sin tracking_key """
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
         if not ready_lines:
