@@ -31,7 +31,16 @@
                             <label>Cliente<select name="client_id"><option value="">— Seleccionar —</option><t t-foreach="clients" t-as="client"><option t-att-value="client.id"><t t-esc="client.name"/></option></t></select></label>
                             <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div>
                             <label>Vehículo<select name="vehicle_id"><option value="">— Seleccionar —</option><t t-foreach="vehicles" t-as="vehicle"><option t-att-value="vehicle.id"><t t-esc="vehicle.name"/></option></t></select></label>
-                            <label>Compañero<input name="companion" placeholder="Nombre del segundo custodio o 'Voy solo'"/></label>
+                          <!--  <label>Compañero<input name="companion" placeholder="Nombre del segundo custodio o 'Voy solo'"/></label> -->
+                            <label>Compañero
+                                <select name="companion_employee_id">
+                                <option value="">— Voy solo —</option>
+                                <t t-foreach="employees" t-as="emp">
+                                    <option t-att-value="emp.id"><t t-esc="emp.name"/></option>
+                                </t>
+                            </select>
+                        </label>
+                            
                             <div class="sgs-two"><label>Viáticos<input type="number" step="0.01" name="amount_perdiem" value="0"/></label><label>Gasolina<input type="number" step="0.01" name="amount_fuel" value="0"/></label></div>
                             <div class="sgs-two"><label>Hospedaje<input type="number" step="0.01" name="amount_lodging" value="0"/></label><label>Gastos varios<input type="number" step="0.01" name="amount_misc" value="0"/></label></div>
                             <label>Especificar gastos varios<input name="misc_detail" placeholder="Obligatorio si hay gastos varios"/></label>
