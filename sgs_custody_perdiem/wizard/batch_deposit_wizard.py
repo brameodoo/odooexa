@@ -23,12 +23,11 @@ class SgsBatchDepositWizard(models.TransientModel):
     file_ids = fields.Many2many('ir.attachment', string='Comprobantes de Pago (Banorte)', required=True)
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
-def action_process_deposits(self):
+    def action_process_deposits(self):
         """ Extrae el texto del PDF y usa OpenAI con fallback visual inteligente """
         self.ensure_one()
         self.line_ids.unlink()
         
-        # Recuperamos la API Key de OpenAI desde los parámetros
         api_key = self.env['ir.config_parameter'].sudo().get_param('sgs.openai_api_key', '').strip()
         if not api_key:
             raise UserError(_("Por favor, configure primero la API Key de OpenAI en los parámetros del sistema (sgs.openai_api_key)."))
@@ -46,7 +45,6 @@ def action_process_deposits(self):
                 if not attachment.datas:
                     continue
                 
-                # 1. Intentar extracción de texto digital local si es PDF
                 is_pdf = attachment.mimetype == 'application/pdf' or attachment.name.lower().endswith('.pdf')
                 if is_pdf and pypdf:
                     pdf_bytes = base64.b64decode(attachment.datas)
@@ -55,13 +53,10 @@ def action_process_deposits(self):
                     if len(reader.pages) > 0:
                         full_text = reader.pages[0].extract_text() or ""
                 
-                # --- [CAMBIO CRÍTICO: VALIDACIÓN Y FALLBACK VISUAL] ---
-                # Si no es PDF, o el PDF viene vacío/escaneado, activamos el modo de análisis visual
                 force_vision_mode = False
                 if not is_pdf or (is_pdf and not full_text.strip()):
                     force_vision_mode = True
 
-                # 2. Configuración del Payload para OpenAI
                 payload = {
                     "model": "gpt-4o-mini",
                     "messages": [
@@ -78,7 +73,6 @@ def action_process_deposits(self):
                     "temperature": 0.0
                 }
 
-                # Si el PDF falló o es una imagen, reestructuramos el mensaje para mandar el Base64 directo a la visión de la IA
                 if force_vision_mode:
                     base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
                     mimetype = attachment.mimetype if attachment.mimetype else "application/pdf" if is_pdf else "image/png"
@@ -87,7 +81,6 @@ def action_process_deposits(self):
                         {"type": "image_url", "image_url": {"url": f"data:{mimetype};base64,{base64_data}"}}
                     ]
 
-                # Subimos ligeramente el timeout a 45 segundos para prevenir caídas por latencia en lotes grandes
                 response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=45)
                 
                 if response.status_code != 200:
@@ -106,7 +99,6 @@ def action_process_deposits(self):
                     except Exception:
                         pass
 
-                # 3. Mapeo en Odoo
                 custodian = False
                 status = 'error'
                 note = 'RFC no encontrado en ningún empleado.'
@@ -153,6 +145,7 @@ def action_process_deposits(self):
         return action
 
     def action_confirm_deposits(self):
+        """ Método de confirmación con alineación e indentación corregidas """
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
         if not ready_lines:
