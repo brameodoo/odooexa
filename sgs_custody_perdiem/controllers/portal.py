@@ -70,9 +70,25 @@ class SgsCustodyPortal(http.Controller):
             if emp.exists():
                 companion_text = emp.name
 
+        # --- NUEVO: Procesar inputs de fecha y hora local ---
+        start_dt = post.get('start_datetime')
+        end_dt = post.get('end_datetime')
+        
+        # Odoo requiere strings limpios "YYYY-MM-DD HH:MM:SS" o falsos si vienen vacíos
+        if start_dt:
+            start_dt = start_dt.replace('T', ' ')
+        if end_dt:
+            end_dt = end_dt.replace('T', ' ')
+
         vals = {
             'custodian_id': custodian.id,
-            'date': post.get('date') or fields.Date.today(),
+            # Mantenemos 'date' usando el día de inicio para conservar consistencia con tus filtros actuales
+            'date': start_dt[:10] if start_dt else fields.Date.today(),
+            
+            # Asignamos las nuevas variables procesadas
+            'start_datetime': start_dt or False,
+            'end_datetime': end_dt or False,
+            
             'client_id': client.id if client and client.exists() else False,
             'origin': post.get('origin'),
             'destination': post.get('destination'),
@@ -86,6 +102,7 @@ class SgsCustodyPortal(http.Controller):
             'misc_detail': post.get('misc_detail'),
             'status': 'pending',
         }
+        
         upload = request.httprequest.files.get('evidence')
         if upload and upload.filename:
             vals['evidence_filename'] = upload.filename
