@@ -29,8 +29,20 @@
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                             <label>Fecha del servicio<input type="date" name="date" required="required"/></label>
                             <label>Cliente<select name="client_id"><option value="">— Seleccionar —</option><t t-foreach="clients" t-as="client"><option t-att-value="client.id"><t t-esc="client.name"/></option></t></select></label>
-                            <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div>
-                            <label>Vehículo<select name="vehicle_id"><option value="">— Seleccionar —</option><t t-foreach="vehicles" t-as="vehicle"><option t-att-value="vehicle.id"><t t-esc="vehicle.name"/></option></t></select></label>
+                            <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div> 
+                          <!--  <label>Vehículo<select name="vehicle_id"><option value="">— Seleccionar —</option><t t-foreach="vehicles" t-as="vehicle"><option t-att-value="vehicle.id"><t t-esc="vehicle.name"/></option></t></select></label> -->
+                            <label>Vehículo
+                                <select name="vehicle_id">
+                                    <option value="">— Seleccionar —</option>
+                                    <t t-foreach="vehicles" t-as="vehicle">
+                                        <option t-att-value="vehicle.id">
+                                            <t t-if="vehicle.license_plate">[<t t-esc="vehicle.license_plate"/>]</t> 
+                                            <t t-esc="vehicle.model_id.brand_id.name or ''"/> 
+                                            <t t-esc="vehicle.model_id.name or ''"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </label>
                           <!--  <label>Compañero<input name="companion" placeholder="Nombre del segundo custodio o 'Voy solo'"/></label> -->
                             <label>Compañero
                                 <select name="companion_employee_id">
