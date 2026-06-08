@@ -18,7 +18,7 @@ class SgsCustodyPortal(http.Controller):
             raise NotFound()
         return custodian
 
-    @http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
+@http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
     def custodian_home(self, token, **kw):
         custodian = self._get_custodian(token)
         services = request.env['sgs.route.service'].sudo().search([('custodian_id', '=', custodian.id)], limit=20, order='date desc, id desc')
@@ -26,6 +26,14 @@ class SgsCustodyPortal(http.Controller):
         fiscal = request.env['sgs.fiscal.receipt'].sudo().search([('custodian_id', '=', custodian.id)], limit=10, order='date desc, id desc')
         clients = request.env['sgs.client'].sudo().search([('active', '=', True)], order='name')
         vehicles = request.env['sgs.vehicle'].sudo().search([('active', '=', True)], order='plate')
+        
+        # --- NUEVO: Buscar empleados activos para el selector de compañeros ---
+        # Excluimos al propio custodio de la lista para que no se seleccione a sí mismo
+        employees = request.env['hr.employee'].sudo().search([
+            ('active', '=', True),
+            ('id', '!=', custodian.employee_id.id)
+        ], order='name')
+
         return request.render('sgs_custody_perdiem.portal_custodian_home', {
             'custodian': custodian,
             'services': services,
@@ -33,6 +41,7 @@ class SgsCustodyPortal(http.Controller):
             'fiscal_receipts': fiscal,
             'clients': clients,
             'vehicles': vehicles,
+            'employees': employees, # Pasamos la variable al XML
             'token': token,
             'format_amount': self._format_amount,
         })
@@ -46,13 +55,21 @@ class SgsCustodyPortal(http.Controller):
         vehicle = False
         if post.get('vehicle_id'):
             vehicle = request.env['sgs.vehicle'].sudo().browse(int(post['vehicle_id']))
+            
+        # --- NUEVO: Validar la selección del compañero ---
+        companion_text = "Voy solo"
+        if post.get('companion_employee_id'):
+            emp = request.env['hr.employee'].sudo().browse(int(post['companion_employee_id']))
+            if emp.exists():
+                companion_text = emp.name
+
         vals = {
             'custodian_id': custodian.id,
             'date': post.get('date') or fields.Date.today(),
             'client_id': client.id if client and client.exists() else False,
             'origin': post.get('origin'),
             'destination': post.get('destination'),
-            'companion': post.get('companion'),
+            'companion': companion_text, # Guardamos el nombre del empleado o 'Voy solo'
             'vehicle_id': vehicle.id if vehicle and vehicle.exists() else False,
             'comments': post.get('comments'),
             'amount_perdiem': float(post.get('amount_perdiem') or 0),
@@ -80,6 +97,7 @@ class SgsCustodyPortal(http.Controller):
                 line_vals['image'] = base64.b64encode(toll_files[idx].read())
             request.env['sgs.toll.line'].sudo().create(line_vals)
         return request.redirect('/sgs/custodio/%s?ok=servicio' % token)
+        
 
     @http.route(['/sgs/custodio/<string:token>/fiscal'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_fiscal(self, token, **post):
