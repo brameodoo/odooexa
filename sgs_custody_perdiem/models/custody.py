@@ -209,21 +209,25 @@ class SgsRouteService(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin', 'portal.mixin']
     _order = 'date desc, id desc'
 
-    name = fields.Char('Folio', default='Nuevo', copy=False, readonly=True, tracking=True)
+    name = fields.Char('Folio', default="Nuevo", copy=False, readonly=True, tracking=True)
     custodian_id = fields.Many2one('sgs.custodian', string='Custodio', required=True, ondelete='cascade', tracking=True)
-    company_id = fields.Many2one(related='custodian_id.company_id', store=True, readonly=True)
-    currency_id = fields.Many2one(related='custodian_id.currency_id', readonly=True)
+    company_id = fields.Many2one('res.company', string='Compañía', related='custodian_id.company_id', store=True, readonly=True)
+    currency_id = fields.Many2one('res.currency', related='custodian_id.currency_id', readonly=True)
+    
+    # 1. Dejamos únicamente este Many2one apuntando a Flota
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo')
+    
     date = fields.Date('Fecha del servicio', required=True, default=fields.Date.context_today, tracking=True)
     submit_datetime = fields.Datetime('Fecha/hora de captura', default=fields.Datetime.now, readonly=True)
     client_id = fields.Many2one('sgs.client', string='Cliente')
     origin = fields.Char('Origen')
     destination = fields.Char('Destino')
     companion = fields.Char('Compañero / segundo custodio')
+    
+    # [Línea vieja 223 ELIMINADA para evitar el conflicto]
     vehicle_snapshot = fields.Char('Vehículo usado')
     plate_snapshot = fields.Char('Placas')
     comments = fields.Text('Comentarios / aclaraciones')
-
     amount_perdiem = fields.Monetary('Viáticos', currency_field='currency_id', default=0.0)
     amount_fuel = fields.Monetary('Gasolina', currency_field='currency_id', default=0.0)
     amount_lodging = fields.Monetary('Hospedaje', currency_field='currency_id', default=0.0)
