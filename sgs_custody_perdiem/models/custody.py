@@ -25,6 +25,7 @@ class SgsCustodian(models.Model):
     active = fields.Boolean(default=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
     currency_id = fields.Many2one('res.currency', related='company_id.currency_id', readonly=True)
+    vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo')
     initial_fund = fields.Monetary('Fondo inicial', currency_field='currency_id', default=0.0, tracking=True)
     portal_token = fields.Char('Token portal', copy=False, index=True, readonly=True, default=lambda self: secrets.token_urlsafe(24))
     portal_url = fields.Char('Enlace portal', compute='_compute_portal_url')
