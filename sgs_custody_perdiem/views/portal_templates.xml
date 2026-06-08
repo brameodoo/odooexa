@@ -27,7 +27,15 @@
                         <p>Registra ruta, vehículo, compañero y desglose de gastos. Los importes quedarán pendientes de validación administrativa.</p>
                         <form t-att-action="'/sgs/custodio/%s/servicio' % token" method="post" enctype="multipart/form-data" class="sgs-form">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <label>Fecha del servicio<input type="date" name="date" required="required"/></label>
+                            <!-- <label>Fecha del servicio<input type="date" name="date" required="required"/></label> -->
+                            <div class="sgs-two">
+                                <label>Inicio del servicio (Fecha y Hora)
+                                    <input type="datetime-local" name="start_datetime" required="required"/>
+                                </label>
+                                <label>Término del servicio (Fecha y Hora)
+                                    <input type="datetime-local" name="end_datetime" required="required"/>
+                                </label>
+                            </div>
                             <label>Cliente<select name="client_id"><option value="">— Seleccionar —</option><t t-foreach="clients" t-as="client"><option t-att-value="client.id"><t t-esc="client.name"/></option></t></select></label>
                             <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div> 
                           <!--  <label>Vehículo<select name="vehicle_id"><option value="">— Seleccionar —</option><t t-foreach="vehicles" t-as="vehicle"><option t-att-value="vehicle.id"><t t-esc="vehicle.name"/></option></t></select></label> -->
