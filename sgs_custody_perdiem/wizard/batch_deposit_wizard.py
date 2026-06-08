@@ -23,8 +23,8 @@ class SgsBatchDepositWizard(models.TransientModel):
     file_ids = fields.Many2many('ir.attachment', string='Comprobantes de Pago (Banorte)', required=True)
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
-    def action_process_deposits(self):
-        """ Extrae datos con OpenAI y valida que el archivo o la clave de rastreo no estén duplicados """
+def action_process_deposits(self):
+        """ Extrae datos con OpenAI y valida duplicados únicamente contra depósitos confirmados """
         self.ensure_one()
         self.line_ids.unlink()
         
@@ -40,22 +40,6 @@ class SgsBatchDepositWizard(models.TransientModel):
         lines_to_create = []
 
         for attachment in self.file_ids:
-            # --- CANDADO 1: Validación por Checksum del Archivo ---
-            # Si el archivo exacto ya existe vinculado a otro lote procesado anteriormente
-            if attachment.checksum:
-                existing_line = self.env['sgs.batch.deposit.wizard.line'].search([
-                    ('wizard_id', '!=', self.id),
-                    ('attachment_checksum', '=', attachment.checksum)
-                ], limit=1)
-                if existing_line:
-                    lines_to_create.append((0, 0, {
-                        'detected_rfc': 'DUPLICADO',
-                        'status': 'error',
-                        'notes': f'El archivo físico "{attachment.name}" ya fue procesado en un lote anterior.',
-                        'attachment_id': attachment.id
-                    }))
-                    continue
-
             full_text = ""
             try:
                 if not attachment.datas:
@@ -116,7 +100,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                     except Exception:
                         pass
 
-                # --- CANDADO 2: Validación por Clave de Rastreo SPEI Banorte ---
+                # --- CANDADO REAL: Validación contra depósitos definitivos confirmados ---
                 if tracking_key:
                     existing_deposit = self.env['sgs.perdiem.deposit'].search([
                         ('tracking_key', '=', tracking_key)
@@ -127,7 +111,7 @@ class SgsBatchDepositWizard(models.TransientModel):
                             'date': date_val,
                             'amount': amount,
                             'status': 'error',
-                            'notes': f'Duplicado Bancario: La clave de rastreo SPEI {tracking_key} ya fue aplicada antes.',
+                            'notes': f'Duplicado Bancario: La clave de rastreo SPEI {tracking_key} ya fue dispersada en contabilidad anteriormente.',
                             'attachment_id': attachment.id,
                             'attachment_checksum': attachment.checksum
                         }))
@@ -180,7 +164,7 @@ class SgsBatchDepositWizard(models.TransientModel):
         action = self.env['ir.actions.act_window']._for_xml_id('sgs_custody_perdiem.action_sgs_batch_deposit_wizard')
         action['res_id'] = self.id
         return action
-
+    
     def action_confirm_deposits(self):
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
