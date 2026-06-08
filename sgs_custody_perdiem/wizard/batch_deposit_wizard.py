@@ -1,7 +1,17 @@
 import base64
+import json
 import re
+import io
 from datetime import datetime
 import requests
+
+try:
+    import pypdf
+except ImportError:
+    try:
+        import PyPDF2 as pypdf
+    except ImportError:
+        pypdf = False
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
@@ -14,81 +24,88 @@ class SgsBatchDepositWizard(models.TransientModel):
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
     def action_process_deposits(self):
-        """ Envía la imagen del comprobante a Google Vision API usando la API Key estándar """
+        """ Extrae el texto del PDF y usa OpenAI para mapear estructuradamente los datos """
         self.ensure_one()
         self.line_ids.unlink()
         
-        api_key = self.env['ir.config_parameter'].sudo().get_param('sgs.google_cloud_api_key', '').strip()
+        # Recuperamos la API Key de OpenAI desde los parámetros (la que espera tu sistema original)
+        api_key = self.env['ir.config_parameter'].sudo().get_param('sgs.openai_api_key', '').strip()
         if not api_key:
-            api_key = 'AIzaSyBglupqy-xD6ioWugEO9ZhR8w7Rs9pb_4M'
+            raise UserError(_("Por favor, configure primero la API Key de OpenAI en los parámetros del sistema (sgs.openai_api_key)."))
 
-        url = f'https://vision.googleapis.com/v1/images:annotate?key={api_key}'
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
         lines_to_create = []
 
         for attachment in self.file_ids:
             full_text = ""
-            rfc = False
-            amount = 0.0
-            date_val = fields.Date.context_today(self)
-            
             try:
                 if not attachment.datas:
                     continue
                 
-                # Al subir capturas de pantalla (PNG/JPG), Odoo lee los datos como base64 crudo
-                base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
-                
-                # Payload estándar para images:annotate (Compatible con API Key simple)
-                payload = {
-                    "requests": [{
-                        "image": {"content": base64_data},
-                        "features": [{"type": "TEXT_DETECTION"}]
-                    }]
-                }
-                
-                response = requests.post(url, json=payload, timeout=30)
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    text_annotations = result.get('responses', [{}])[0].get('textAnnotations', [])
-                    if text_annotations:
-                        full_text = text_annotations[0].get('description', '')
+                # 1. Extraer el texto digital del archivo de Banorte de forma local
+                is_pdf = attachment.mimetype == 'application/pdf' or attachment.name.lower().endswith('.pdf')
+                if is_pdf and pypdf:
+                    pdf_bytes = base64.b64decode(attachment.datas)
+                    pdf_file = io.BytesIO(pdf_bytes)
+                    reader = pypdf.PdfReader(pdf_file)
+                    if len(reader.pages) > 0:
+                        full_text = reader.pages[0].extract_text()
                 else:
-                    raise ValidationError(f'Google Vision rechazó la imagen (Error {response.status_code})')
+                    # Si es imagen o no hay pypdf, mandamos el base64 crudo
+                    full_text = f"[Contenido binario o imagen en base64: {attachment.name}]"
 
-                if not full_text:
-                    lines_to_create.append((0, 0, {
-                        'detected_rfc': 'SIN TEXTO',
-                        'status': 'error',
-                        'notes': 'La IA no encontró texto visible en la imagen.',
-                        'attachment_id': attachment.id
-                    }))
-                    continue
+                # 2. Llamada inteligente a OpenAI mediante Structured Outputs (JSON)
+                payload = {
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Eres un asistente experto en contabilidad mexicana. Tu trabajo es extraer el RFC del BENEFICIARIO (LONGITUD 12 o 13 caracteres, nunca uses la clave de rastreo), el IMPORTE A TRANSFERIR (como número flotante) y la FECHA DE APLICACIÓN (en formato YYYY-MM-DD) desde el texto de un comprobante SPEI de Banorte. Responde estrictamente en formato JSON con las llaves: rfc, amount, date."
+                        },
+                        {
+                            "role": "user",
+                            "content": full_text if is_pdf else f"Analiza visualmente este documento adjunto."
+                        }
+                    ],
+                    "response_format": { "type": "json_object" },
+                    "temperature": 0.0
+                }
 
-                # --- Procesamiento con la Regex de Texto Plano Normalizado (Tu propuesta exitosa) ---
-                text_normalized = re.sub(r'\s+', ' ', full_text).strip()
+                # Si es una imagen, acoplamos la estructura de visión de OpenAI
+                if not is_pdf:
+                    base64_data = attachment.datas.decode('utf-8') if isinstance(attachment.datas, bytes) else attachment.datas
+                    payload["messages"][1]["content"] = [
+                        {"type": "text", "text": "Extrae el rfc, amount y date de este comprobante de Banorte:"},
+                        {"type": "image_url", "image_url": {"url": f"data:{attachment.mimetype};base64,{base64_data}"}}
+                    ]
+
+                response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=30)
                 
-                # 1. Buscar RFC Beneficiario
-                rfc_match = re.search(r'RFC\s*Beneficiario\s*[:,"-]*\s*([A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3})', text_normalized, re.IGNORECASE)
-                rfc = rfc_match.group(1).upper() if rfc_match else False
+                if response.status_code != 200:
+                    raise ValidationError(f"OpenAI respondió con un error (Código {response.status_code})")
+
+                res_json = response.json()
+                ai_content = json.loads(res_json['choices'][0]['message']['content'])
+
+                rfc = ai_content.get('rfc', '').strip().upper() if ai_content.get('rfc') else False
+                amount = float(ai_content.get('amount', 0.0))
                 
-                # 2. Buscar Importe a Transferir
-                amount_match = re.search(r'Importe\s*a\s*Transferir\s*[:,"-]*\s*\\?\$?\s*([0-9,]+\.\d{2})', text_normalized, re.IGNORECASE)
-                amount = float(amount_match.group(1).replace(',', '')) if amount_match else 0.0
-                
-                # 3. Buscar Fecha de Aplicación
-                date_match = re.search(r'Fecha\s*Aplicación\s*[:,"-]*\s*(\d{2}/\d{2}/\d{4})', text_normalized, re.IGNORECASE)
-                if date_match:
+                date_val = fields.Date.context_today(self)
+                if ai_content.get('date'):
                     try:
-                        date_val = datetime.strptime(date_match.group(1).strip(), '%d/%m/%Y').date()
+                        date_val = fields.Date.from_string(ai_content.get('date')[:10])
                     except Exception:
                         pass
 
-                # --- Mapeo de Modelos Odoo ---
+                # 3. Vinculación y validación dentro de Odoo
                 custodian = False
                 status = 'error'
                 note = 'RFC no encontrado en ningún empleado.'
-                
+
                 if rfc:
                     employee = self.env['hr.employee'].search([('l10n_mx_rfc', '=', rfc)], limit=1)
                     if employee:
@@ -102,9 +119,9 @@ class SgsBatchDepositWizard(models.TransientModel):
                         else:
                             note = f'Empleado {employee.name} hallado, pero no es Custodio SGS.'
                     else:
-                        note = f'RFC {rfc} no está asignado a ningún empleado.'
+                        note = f'RFC {rfc} no asignado a ningún empleado.'
                 else:
-                    note = 'No se localizó la etiqueta RFC Beneficiario en la imagen.'
+                    note = 'La IA no pudo determinar el RFC del Beneficiario.'
 
                 lines_to_create.append((0, 0, {
                     'custodian_id': custodian.id if custodian else False,
