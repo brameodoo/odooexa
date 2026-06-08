@@ -18,8 +18,9 @@ class SgsCustodyPortal(http.Controller):
             raise NotFound()
         return custodian
 
-@http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
+    @http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
     def custodian_home(self, token, **kw):
+        """ Ruta principal del portal - Carga empleados para el selector dinámico """
         custodian = self._get_custodian(token)
         services = request.env['sgs.route.service'].sudo().search([('custodian_id', '=', custodian.id)], limit=20, order='date desc, id desc')
         deposits = request.env['sgs.perdiem.deposit'].sudo().search([('custodian_id', '=', custodian.id)], limit=10, order='date desc, id desc')
@@ -27,8 +28,7 @@ class SgsCustodyPortal(http.Controller):
         clients = request.env['sgs.client'].sudo().search([('active', '=', True)], order='name')
         vehicles = request.env['sgs.vehicle'].sudo().search([('active', '=', True)], order='plate')
         
-        # --- NUEVO: Buscar empleados activos para el selector de compañeros ---
-        # Excluimos al propio custodio de la lista para que no se seleccione a sí mismo
+        # Buscar empleados activos excluyendo al propio custodio logueado
         employees = request.env['hr.employee'].sudo().search([
             ('active', '=', True),
             ('id', '!=', custodian.employee_id.id)
@@ -41,13 +41,14 @@ class SgsCustodyPortal(http.Controller):
             'fiscal_receipts': fiscal,
             'clients': clients,
             'vehicles': vehicles,
-            'employees': employees, # Pasamos la variable al XML
+            'employees': employees,
             'token': token,
             'format_amount': self._format_amount,
         })
 
     @http.route(['/sgs/custodio/<string:token>/servicio'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_service(self, token, **post):
+        """ Procesa el cierre de servicio y mapea el ID del empleado seleccionado """
         custodian = self._get_custodian(token)
         client = False
         if post.get('client_id'):
@@ -56,7 +57,7 @@ class SgsCustodyPortal(http.Controller):
         if post.get('vehicle_id'):
             vehicle = request.env['sgs.vehicle'].sudo().browse(int(post['vehicle_id']))
             
-        # --- NUEVO: Validar la selección del compañero ---
+        # Evaluar si seleccionó un compañero o se queda la cadena predeterminada
         companion_text = "Voy solo"
         if post.get('companion_employee_id'):
             emp = request.env['hr.employee'].sudo().browse(int(post['companion_employee_id']))
@@ -69,7 +70,7 @@ class SgsCustodyPortal(http.Controller):
             'client_id': client.id if client and client.exists() else False,
             'origin': post.get('origin'),
             'destination': post.get('destination'),
-            'companion': companion_text, # Guardamos el nombre del empleado o 'Voy solo'
+            'companion': companion_text,
             'vehicle_id': vehicle.id if vehicle and vehicle.exists() else False,
             'comments': post.get('comments'),
             'amount_perdiem': float(post.get('amount_perdiem') or 0),
@@ -83,10 +84,13 @@ class SgsCustodyPortal(http.Controller):
         if upload and upload.filename:
             vals['evidence_filename'] = upload.filename
             vals['evidence_image'] = base64.b64encode(upload.read())
+            
         service = request.env['sgs.route.service'].sudo().create(vals)
+        
         toll_names = request.httprequest.form.getlist('toll_name[]')
         toll_amounts = request.httprequest.form.getlist('toll_amount[]')
         toll_files = request.httprequest.files.getlist('toll_image[]')
+        
         for idx, name in enumerate(toll_names):
             amount = float(toll_amounts[idx] or 0) if idx < len(toll_amounts) else 0
             if not name and not amount:
@@ -96,13 +100,12 @@ class SgsCustodyPortal(http.Controller):
                 line_vals['image_filename'] = toll_files[idx].filename
                 line_vals['image'] = base64.b64encode(toll_files[idx].read())
             request.env['sgs.toll.line'].sudo().create(line_vals)
+            
         return request.redirect('/sgs/custodio/%s?ok=servicio' % token)
-        
 
     @http.route(['/sgs/custodio/<string:token>/fiscal'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_fiscal(self, token, **post):
         custodian = self._get_custodian(token)
-        # Si se sube una imagen, priorizamos el OCR
         upload = request.httprequest.files.get('image')
         
         vals = {
@@ -117,13 +120,10 @@ class SgsCustodyPortal(http.Controller):
         if upload and upload.filename:
             vals['image_filename'] = upload.filename
             vals['image'] = base64.b64encode(upload.read())
-            # Marcamos para procesamiento OCR
             vals['ocr_status'] = 'pending'
         
         receipt = request.env['sgs.fiscal.receipt'].sudo().create(vals)
         
-        # Si hay imagen, disparamos el OCR de forma síncrona para esta versión
-        # (En producción se recomienda asíncrono)
         if receipt.image:
             receipt.action_process_ocr()
             
