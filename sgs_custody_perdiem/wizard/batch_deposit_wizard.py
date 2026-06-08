@@ -23,7 +23,7 @@ class SgsBatchDepositWizard(models.TransientModel):
     file_ids = fields.Many2many('ir.attachment', string='Comprobantes de Pago (Banorte)', required=True)
     line_ids = fields.One2many('sgs.batch.deposit.wizard.line', 'wizard_id', string='Depósitos Detectados')
 
-def action_process_deposits(self):
+    def action_process_deposits(self):
         """ Extrae datos con OpenAI y valida duplicados únicamente contra depósitos confirmados """
         self.ensure_one()
         self.line_ids.unlink()
@@ -164,8 +164,9 @@ def action_process_deposits(self):
         action = self.env['ir.actions.act_window']._for_xml_id('sgs_custody_perdiem.action_sgs_batch_deposit_wizard')
         action['res_id'] = self.id
         return action
-    
+
     def action_confirm_deposits(self):
+        """ Método de confirmación alineado con precisión a nivel de clase """
         self.ensure_one()
         ready_lines = self.line_ids.filtered(lambda l: l.status == 'ready' and l.custodian_id)
         if not ready_lines:
@@ -181,7 +182,7 @@ def action_process_deposits(self):
                 'amount': line.amount,
                 'concept': f'Dispersión masiva Banorte - Ref: {line.detected_rfc}',
                 'week': f'Semana {datetime.now().isocalendar()[1]}',
-                'tracking_key': line.tracking_key # Se guarda la clave de rastreo para bloquear futuros duplicados
+                'tracking_key': line.tracking_key
             })
             created_count += 1
 
@@ -206,8 +207,8 @@ class SgsBatchDepositWizardLine(models.TransientModel):
     date = fields.Date('Fecha Pago')
     amount = fields.Float('Monto ($)')
     attachment_id = fields.Many2one('ir.attachment', string='Archivo de Origen')
-    attachment_checksum = fields.Char('Hash del Archivo') # Campo técnico para almacenar el checksum
-    tracking_key = fields.Char('Clave de Rastreo') # Campo técnico para almacenar el SPEI
+    attachment_checksum = fields.Char('Hash del Archivo')
+    tracking_key = fields.Char('Clave de Rastreo')
     status = fields.Selection([
         ('ready', 'Listo para procesar'),
         ('error', 'Error / Incompleto')
