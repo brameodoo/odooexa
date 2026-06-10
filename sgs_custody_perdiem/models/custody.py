@@ -91,6 +91,9 @@ class SgsCustodian(models.Model):
             else:
                 rec.whatsapp_url = ''
 
+    # Campo técnico para controlar que no se dupliquen las alertas por correo
+    low_balance_alert_sent = fields.Boolean(default=False, string='Alerta de saldo bajo enviada')
+
     @api.depends('initial_fund', 'deposit_ids.amount', 'service_ids.amount_total', 'service_ids.status', 'service_ids.is_late', 'fiscal_receipt_ids.amount')
     def _compute_amounts(self):
         for rec in self:
@@ -100,12 +103,18 @@ class SgsCustodian(models.Model):
             pending = len(rec.service_ids.filtered(lambda s: s.status == 'pending'))
             late = len(rec.service_ids.filtered(lambda s: s.is_late and s.status != 'approved'))
             rejected = len(rec.service_ids.filtered(lambda s: s.status == 'rejected'))
+            
             rec.total_deposits = deposits
             rec.total_expenses = expenses
             rec.total_fiscal = fiscal
-            rec.balance = rec.initial_fund + deposits - expenses
+            
+            # Cálculo del saldo actual
+            current_balance = rec.initial_fund + deposits - expenses
+            rec.balance = current_balance
+            
             rec.pending_service_count = pending
             rec.late_service_count = late
+            
             if not rec.service_ids:
                 rec.compliance_state = 'blue'
             elif rejected or late:
@@ -114,6 +123,20 @@ class SgsCustodian(models.Model):
                 rec.compliance_state = 'yellow'
             else:
                 rec.compliance_state = 'green'
+
+            # --- LÓGICA DE ALERTA DE SALDO BAJO ---
+            # Si el saldo baja de 2000 y no hemos enviado correo, disparamos
+            if current_balance < 2000.00 and not rec.low_balance_alert_sent and (rec.initial_fund > 0 or deposits > 0):
+                rec.low_balance_alert_sent = True
+                # Buscamos la plantilla de correo de forma segura y la enviamos en segundo plano
+                template = rec.env.ref('sgs_custody_perdiem.email_template_custodian_low_balance', raise_if_not_found=False)
+                if template:
+                    # Enviar usando sudo para evitar problemas de permisos del custodio en el portal
+                    template.sudo().send_mail(rec.id, force_send=True)
+            
+            # Si el saldo vuelve a subir (gracias a un nuevo depósito), reiniciamos la bandera
+            elif current_balance >= 2000.00 and rec.low_balance_alert_sent:
+                rec.low_balance_alert_sent = False
 
     def action_regenerate_portal_token(self):
         for rec in self:
