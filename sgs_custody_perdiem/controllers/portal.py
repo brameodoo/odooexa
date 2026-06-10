@@ -60,9 +60,12 @@ class SgsCustodyPortal(http.Controller):
             
         vehicle_id_val = False
         if post.get('vehicle_id'):
-            fleet_vehicle = request.env['fleet.vehicle'].sudo().browse(int(post['vehicle_id']))
-            if fleet_vehicle.exists():
-                vehicle_id_val = fleet_vehicle.id
+            try:
+                fleet_vehicle = request.env['fleet.vehicle'].sudo().browse(int(post['vehicle_id']))
+                if fleet_vehicle.exists():
+                    vehicle_id_val = fleet_vehicle.id
+            except Exception:
+                vehicle_id_val = False
 
         companion_text = "Voy solo"
         if post.get('companion_employee_id'):
