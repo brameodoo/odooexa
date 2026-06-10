@@ -43,7 +43,7 @@
                                 
                                 <label>Vehículo
                                     <select name="vehicle_id">
-                                        <option value="">— Seleccionar —</option>
+                                        <option value="">— Abordo —</option>
                                         <t t-foreach="vehicles" t-as="vehicle">
                                             <option t-att-value="vehicle.id">
                                                 <t t-if="vehicle.license_plate">[<t t-esc="vehicle.license_plate"/>]</t> 
