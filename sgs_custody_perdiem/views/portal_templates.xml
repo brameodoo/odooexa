@@ -118,6 +118,26 @@
                                 <label>Evidencia general<input type="file" name="evidence" accept="image/*" capture="camera"/></label>
                                 <label>Comentarios<textarea name="comments" placeholder="Observaciones o aclaraciones"></textarea></label>
                                 <button type="submit" class="sgs-btn primary">Cerrar servicio</button>
+
+                                <script type="text/javascript">
+                                    function validateGastoRequired(amountId, fileId) {
+                                        var amountInput = document.getElementById(amountId);
+                                        var fileInput = document.getElementById(fileId);
+                                        var labelInput = document.getElementById('label_' + fileId);
+                                        
+                                        if (amountInput &amp;&amp; fileInput &amp;&amp; labelInput) {
+                                            if (parseFloat(amountInput.value) &gt; 0) {
+                                                fileInput.setAttribute('required', 'required');
+                                                labelInput.style.color = '#a94442';
+                                                labelInput.style.fontWeight = 'bold';
+                                            } else {
+                                                fileInput.removeAttribute('required');
+                                                labelInput.style.color = '';
+                                                labelInput.style.fontWeight = 'normal';
+                                            }
+                                        }
+                                    }
+                                </script>
                             </form>
                         </article>
 
@@ -183,24 +203,4 @@
             </t>
         </template>
     </data>
-
-    <script type="text/javascript">
-        function validateGastoRequired(amountId, fileId) {
-            var amountInput = document.getElementById(amountId);
-            var fileInput = document.getElementById(fileId);
-            var labelInput = document.getElementById('label_' + fileId);
-            
-            if (amountInput &amp;&amp; fileInput &amp;&amp; labelInput) {
-                if (parseFloat(amountInput.value) &gt; 0) {
-                    fileInput.setAttribute('required', 'required');
-                    labelInput.style.color = '#a94442';
-                    labelInput.style.fontWeight = 'bold';
-                } else {
-                    fileInput.removeAttribute('required');
-                    labelInput.style.color = '';
-                    labelInput.style.fontWeight = 'normal';
-                }
-            }
-        }
-    </script>
 </odoo>
