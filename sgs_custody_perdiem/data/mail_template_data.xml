@@ -5,7 +5,7 @@
             <name>Custodio: Alerta de Saldo Bajo</name>
             <model_id ref="sgs_custody_perdiem.model_sgs_custodian"/>
             <subject>⚠️ ALERTA: Saldo bajo para el custodio ${object.name}</subject>
-            <email_to>${object.company_id.email or 'administracion@tuempresa.com'}</email_to>
+            <email_to>${object.env['res.users'].search([('groups_id', 'in', object.env.ref('sgs_custodv_erderdiem.group_sgs_manager').id)]).mapped('email') | join(',')}</email_to>
             <body type="html">
                 <div style="font-family: Arial, sans-serif; font-size: 14px;">
                     <p>Estimada Administración,</p>
