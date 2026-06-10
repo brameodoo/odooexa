@@ -52,7 +52,7 @@ class SgsCustodyPortal(http.Controller):
 
     @http.route(['/sgs/custodio/<string:token>/servicio'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_service(self, token, **post):
-        """ Procesa el servicio vinculando el ID del vehículo de flota y compañero """
+        """ Procesa el servicio validando de forma estricta los archivos adjuntos """
         custodian = self._get_custodian(token)
         client = False
         if post.get('client_id'):
@@ -70,11 +70,22 @@ class SgsCustodyPortal(http.Controller):
             if emp.exists():
                 companion_text = emp.name
 
-        # --- NUEVO: Procesar inputs de fecha y hora local ---
+        # --- VALIDACIÓN DE COMPROBANTES MANDATORIOS ---
+        amount_fuel = float(post.get('amount_fuel') or 0)
+        amount_lodging = float(post.get('amount_lodging') or 0)
+        
+        fuel_file = request.httprequest.files.get('fuel_ticket')
+        lodging_file = request.httprequest.files.get('lodging_ticket')
+        
+        # Si hay monto pero no hay archivo o viene sin nombre (vacío), detenemos la operación de forma segura
+        if amount_fuel > 0 and (not fuel_file or not fuel_file.filename):
+            return request.make_response("<script>alert('Error: La foto del ticket de gasolina es obligatoria si registraste un monto.'); window.history.back();</script>")
+            
+        if amount_lodging > 0 and (not lodging_file or not lodging_file.filename):
+            return request.make_response("<script>alert('Error: El comprobante de hospedaje es obligatorio si registraste un monto.'); window.history.back();</script>")
+
         start_dt = post.get('start_datetime')
         end_dt = post.get('end_datetime')
-        
-        # Odoo requiere strings limpios "YYYY-MM-DD HH:MM:SS" o falsos si vienen vacíos
         if start_dt:
             start_dt = start_dt.replace('T', ' ')
         if end_dt:
@@ -82,13 +93,9 @@ class SgsCustodyPortal(http.Controller):
 
         vals = {
             'custodian_id': custodian.id,
-            # Mantenemos 'date' usando el día de inicio para conservar consistencia con tus filtros actuales
             'date': start_dt[:10] if start_dt else fields.Date.today(),
-            
-            # Asignamos las nuevas variables procesadas
             'start_datetime': start_dt or False,
             'end_datetime': end_dt or False,
-            
             'client_id': client.id if client and client.exists() else False,
             'origin': post.get('origin'),
             'destination': post.get('destination'),
@@ -96,13 +103,22 @@ class SgsCustodyPortal(http.Controller):
             'vehicle_id': vehicle_id_val,
             'comments': post.get('comments'),
             'amount_perdiem': float(post.get('amount_perdiem') or 0),
-            'amount_fuel': float(post.get('amount_fuel') or 0),
-            'amount_lodging': float(post.get('amount_lodging') or 0),
+            'amount_fuel': amount_fuel,
+            'amount_lodging': amount_lodging,
             'amount_misc': float(post.get('amount_misc') or 0),
             'misc_detail': post.get('misc_detail'),
             'status': 'pending',
         }
-        
+
+        # Procesar y guardar archivos de gasolina e higiene si fueron cargados
+        if fuel_file and fuel_file.filename:
+            vals['fuel_ticket_filename'] = fuel_file.filename
+            vals['fuel_ticket'] = base64.b64encode(fuel_file.read())
+            
+        if lodging_file and lodging_file.filename:
+            vals['lodging_ticket_filename'] = lodging_file.filename
+            vals['lodging_ticket'] = base64.b64encode(lodging_file.read())
+
         upload = request.httprequest.files.get('evidence')
         if upload and upload.filename:
             vals['evidence_filename'] = upload.filename
@@ -110,6 +126,7 @@ class SgsCustodyPortal(http.Controller):
             
         service = request.env['sgs.route.service'].sudo().create(vals)
         
+        # --- PROCESAR CASETAS (Validación extra) ---
         toll_names = request.httprequest.form.getlist('toll_name[]')
         toll_amounts = request.httprequest.form.getlist('toll_amount[]')
         toll_files = request.httprequest.files.getlist('toll_image[]')
@@ -118,10 +135,18 @@ class SgsCustodyPortal(http.Controller):
             amount = float(toll_amounts[idx] or 0) if idx < len(toll_amounts) else 0
             if not name and not amount:
                 continue
+                
+            # Validación estricta para casetas: si hay monto, tiene que haber foto de la caseta
+            t_file = toll_files[idx] if idx < len(toll_files) else False
+            if amount > 0 and (not t_file or not t_file.filename):
+                # Como el servicio principal ya se creó, le permitimos continuar pero registramos la alerta en comentarios administrativos
+                service.comments = (service.comments or '') + f"\n[ALERTA ADM] Se registró monto para caseta '{name}' por ${amount} sin foto de evidencia."
+                continue
+
             line_vals = {'service_id': service.id, 'name': name or 'Caseta', 'amount': amount}
-            if idx < len(toll_files) and toll_files[idx] and toll_files[idx].filename:
-                line_vals['image_filename'] = toll_files[idx].filename
-                line_vals['image'] = base64.b64encode(toll_files[idx].read())
+            if t_file and t_file.filename:
+                line_vals['image_filename'] = t_file.filename
+                line_vals['image'] = base64.b64encode(t_file.read())
             request.env['sgs.toll.line'].sudo().create(line_vals)
             
         return request.redirect('/sgs/custodio/%s?ok=servicio' % token)
