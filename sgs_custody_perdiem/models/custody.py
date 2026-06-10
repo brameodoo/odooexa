@@ -293,15 +293,20 @@ class SgsRouteService(models.Model):
                 emp = cust.employee_number or str(cust.id or '')
                 vals['name'] = 'F-%s-%s' % (emp, seq)
             
-            # --- CORRECCIÓN: Apuntar al modelo oficial de Flota ---
-            if vals.get('vehicle_id') and not vals.get('vehicle_snapshot'):
-                veh = self.env['fleet.vehicle'].sudo().browse(vals['vehicle_id'])
-                if veh.exists():
-                    # Formateamos el snapshot con la marca y modelo oficial
-                    brand_name = veh.model_id.brand_id.name or ''
-                    model_name = veh.model_id.name or ''
-                    vals['vehicle_snapshot'] = f"{brand_name} {model_name}".strip() or veh.name
-                    vals['plate_snapshot'] = veh.license_plate or ''
+            # --- MODIFICACIÓN: Manejo de Vehículo o estatus Abordo ---
+            if vals.get('vehicle_id'):
+                if not vals.get('vehicle_snapshot'):
+                    veh = self.env['fleet.vehicle'].sudo().browse(vals['vehicle_id'])
+                    if veh.exists():
+                        brand_name = veh.model_id.brand_id.name or ''
+                        model_name = veh.model_id.name or ''
+                        vals['vehicle_snapshot'] = f"{brand_name} {model_name}".strip() or veh.name
+                        vals['plate_snapshot'] = veh.license_plate or ''
+            else:
+                # Si no se seleccionó vehículo de la flota, asumimos el estatus de Abordo
+                vals['vehicle_snapshot'] = 'Abordo'
+                vals['plate_snapshot'] = 'N/A'
+                
         return super().create(vals_list)
 
     def action_approve(self):
