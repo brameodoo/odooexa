@@ -292,10 +292,16 @@ class SgsRouteService(models.Model):
                 seq = self.env['ir.sequence'].next_by_code('sgs.route.service') or '0001'
                 emp = cust.employee_number or str(cust.id or '')
                 vals['name'] = 'F-%s-%s' % (emp, seq)
+            
+            # --- CORRECCIÓN: Apuntar al modelo oficial de Flota ---
             if vals.get('vehicle_id') and not vals.get('vehicle_snapshot'):
-                veh = self.env['sgs.vehicle'].browse(vals['vehicle_id'])
-                vals['vehicle_snapshot'] = veh.name
-                vals['plate_snapshot'] = veh.plate
+                veh = self.env['fleet.vehicle'].sudo().browse(vals['vehicle_id'])
+                if veh.exists():
+                    # Formateamos el snapshot con la marca y modelo oficial
+                    brand_name = veh.model_id.brand_id.name or ''
+                    model_name = veh.model_id.name or ''
+                    vals['vehicle_snapshot'] = f"{brand_name} {model_name}".strip() or veh.name
+                    vals['plate_snapshot'] = veh.license_plate or ''
         return super().create(vals_list)
 
     def action_approve(self):
