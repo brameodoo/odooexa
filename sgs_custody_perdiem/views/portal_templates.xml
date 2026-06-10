@@ -27,7 +27,7 @@
                         <p>Registra ruta, vehículo, compañero y desglose de gastos. Los importes quedarán pendientes de validación administrativa.</p>
                         <form t-att-action="'/sgs/custodio/%s/servicio' % token" method="post" enctype="multipart/form-data" class="sgs-form">
                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                            <!-- <label>Fecha del servicio<input type="date" name="date" required="required"/></label> -->
+                            
                             <div class="sgs-two">
                                 <label>Inicio del servicio (Fecha y Hora)
                                     <input type="datetime-local" name="start_datetime" required="required"/>
@@ -36,9 +36,10 @@
                                     <input type="datetime-local" name="end_datetime" required="required"/>
                                 </label>
                             </div>
+                            
                             <label>Cliente<select name="client_id"><option value="">— Seleccionar —</option><t t-foreach="clients" t-as="client"><option t-att-value="client.id"><t t-esc="client.name"/></option></t></select></label>
                             <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div> 
-                          <!--  <label>Vehículo<select name="vehicle_id"><option value="">— Seleccionar —</option><t t-foreach="vehicles" t-as="vehicle"><option t-att-value="vehicle.id"><t t-esc="vehicle.name"/></option></t></select></label> -->
+                            
                             <label>Vehículo
                                 <select name="vehicle_id">
                                     <option value="">— Seleccionar —</option>
@@ -51,20 +52,67 @@
                                     </t>
                                 </select>
                             </label>
-                          <!--  <label>Compañero<input name="companion" placeholder="Nombre del segundo custodio o 'Voy solo'"/></label> -->
+                            
                             <label>Compañero
                                 <select name="companion_employee_id">
-                                <option value="">— Voy solo —</option>
-                                <t t-foreach="employees" t-as="emp">
-                                    <option t-att-value="emp.id"><t t-esc="emp.name"/></option>
-                                </t>
-                            </select>
-                        </label>
+                                    <option value="">— Voy solo —</option>
+                                    <t t-foreach="employees" t-as="emp">
+                                        <option t-att-value="emp.id"><t t-esc="emp.name"/></option>
+                                    </t>
+                                </select>
+                            </label>
                             
-                            <div class="sgs-two"><label>Viáticos<input type="number" step="0.01" name="amount_perdiem" value="0"/></label><label>Gasolina<input type="number" step="0.01" name="amount_fuel" value="0"/></label></div>
-                            <div class="sgs-two"><label>Hospedaje<input type="number" step="0.01" name="amount_lodging" value="0"/></label><label>Gastos varios<input type="number" step="0.01" name="amount_misc" value="0"/></label></div>
+                            <div class="sgs-expenses-section" style="margin-top: 20px; border-top: 2px solid #e9ecef; padding-top: 15px;">
+                                <h3 style="font-size: 1.1em; margin-bottom: 5px; color: #333;">Desglose de Gastos y Comprobantes</h3>
+                                <p class="sgs-help" style="color: #a94442; font-size: 0.85em; margin-bottom: 15px; font-weight: bold;">
+                                    * Nota: Si registras un monto en Gasolina o Hospedaje, es obligatorio capturar la fotografía del comprobante.
+                                </p>
+                                
+                                <div class="sgs-expense-row" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #ffc107;">
+                                    <div class="sgs-two">
+                                        <label style="margin-bottom: 0;">Monto Gasolina
+                                            <input type="number" step="0.01" name="amount_fuel" id="amount_fuel" value="0" style="width: 100%; margin-top: 5px;" onchange="validateGastoRequired('amount_fuel', 'fuel_ticket')"/>
+                                        </label>
+                                        <label id="label_fuel_ticket" style="margin-bottom: 0;">Foto del Ticket (Gasolina)
+                                            <input type="file" name="fuel_ticket" id="fuel_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em;"/>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="sgs-expense-row" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #17a2b8;">
+                                    <div class="sgs-two">
+                                        <label style="margin-bottom: 0;">Monto Hospedaje (Hotel)
+                                            <input type="number" step="0.01" name="amount_lodging" id="amount_lodging" value="0" style="width: 100%; margin-top: 5px;" onchange="validateGastoRequired('amount_lodging', 'lodging_ticket')"/>
+                                        </label>
+                                        <label id="label_lodging_ticket" style="margin-bottom: 0;">Comprobante Hospedaje
+                                            <input type="file" name="lodging_ticket" id="lodging_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em;"/>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="sgs-two" style="margin-bottom: 12px;">
+                                    <label>Viáticos (Alimentos / Otros)
+                                        <input type="number" step="0.01" name="amount_perdiem" value="0"/>
+                                    </label>
+                                    <label>Gastos varios
+                                        <input type="number" step="0.01" name="amount_misc" value="0"/>
+                                    </label>
+                                </div>
+                            </div>
                             <label>Especificar gastos varios<input name="misc_detail" placeholder="Obligatorio si hay gastos varios"/></label>
-                            <div class="sgs-tolls"><h3>Casetas</h3><p>Si tienes varias casetas, puedes llenar hasta tres líneas en esta versión inicial.</p><t t-foreach="[1,2,3]" t-as="i"><div class="sgs-three"><input name="toll_name[]" placeholder="Caseta"/><input type="number" step="0.01" name="toll_amount[]" placeholder="Monto"/><input type="file" name="toll_image[]" accept="image/*" capture="camera"/></div></t></div>
+                            
+                            <div class="sgs-tolls">
+                                <h3>Casetas</h3>
+                                <p>Si tienes varias casetas, puedes llenar hasta tres líneas en esta versión inicial.</p>
+                                <t t-foreach="[1,2,3]" t-as="i">
+                                    <div class="sgs-three">
+                                        <input name="toll_name[]" placeholder="Caseta"/>
+                                        <input type="number" step="0.01" name="toll_amount[]" placeholder="Monto"/>
+                                        <input type="file" name="toll_image[]" accept="image/*" capture="camera"/>
+                                    </div>
+                                </t>
+                            </div>
+                            
                             <label>Evidencia general<input type="file" name="evidence" accept="image/*" capture="camera"/></label>
                             <label>Comentarios<textarea name="comments" placeholder="Observaciones o aclaraciones"></textarea></label>
                             <button type="submit" class="sgs-btn primary">Cerrar servicio</button>
@@ -83,14 +131,12 @@
 
                         <h2 class="sgs-mt">Movimientos recientes</h2>
                         <div class="sgs-movements">
-                            <!-- Mensaje de éxito -->
                             <t t-if="request.params.get('ok') == 'fiscal'">
                                 <div class="alert alert-success" style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em;">
                                     ¡Comprobante recibido! La IA lo está procesando. Refresca en unos segundos.
                                 </div>
                             </t>
                             
-                            <!-- Facturas y Comprobantes -->
                             <t t-foreach="fiscal_receipts" t-as="fr">
                                 <div class="sgs-move">
                                     <div>
@@ -116,7 +162,6 @@
                                 </div>
                             </t>
 
-                            <!-- Servicios -->
                             <t t-foreach="services" t-as="svc">
                                 <div class="sgs-move">
                                     <div>
@@ -135,4 +180,24 @@
             </div>
         </t>
     </template>
+
+    <script type="text/javascript">
+        function validateGastoRequired(amountId, fileId) {
+            var amountInput = document.getElementById(amountId);
+            var fileInput = document.getElementById(fileId);
+            var labelInput = document.getElementById('label_' + fileId);
+            
+            if (amountInput &amp;&amp; fileInput &amp;&amp; labelInput) {
+                if (parseFloat(amountInput.value) &gt; 0) {
+                    fileInput.setAttribute('required', 'required');
+                    labelInput.style.color = '#a94442';
+                    labelInput.style.fontWeight = 'bold';
+                } else {
+                    fileInput.removeAttribute('required');
+                    labelInput.style.color = '';
+                    labelInput.style.fontWeight = 'normal';
+                }
+            }
+        }
+    </script>
 </odoo>
