@@ -233,6 +233,12 @@ class SgsRouteService(models.Model):
     amount_perdiem = fields.Monetary('Viáticos', currency_field='currency_id', default=0.0)
     amount_fuel = fields.Monetary('Gasolina', currency_field='currency_id', default=0.0)
     amount_lodging = fields.Monetary('Hospedaje', currency_field='currency_id', default=0.0)
+    # --- NUEVOS CAMPOS PARA COMPROBANTES OBLIGATORIOS ---
+    fuel_ticket = fields.Binary('Ticket de Gasolina', attachment=True)
+    fuel_ticket_filename = fields.Char('Nombre del Archivo de Gasolina')
+    
+    lodging_ticket = fields.Binary('Comprobante de Hospedaje', attachment=True)
+    lodging_ticket_filename = fields.Char('Nombre del Archivo de Hospedaje')
     amount_misc = fields.Monetary('Gastos varios', currency_field='currency_id', default=0.0)
     misc_detail = fields.Char('Especificación gastos varios')
     toll_line_ids = fields.One2many('sgs.toll.line', 'service_id', string='Detalle de Casetas')
