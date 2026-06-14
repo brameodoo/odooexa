@@ -34,7 +34,6 @@
         <field name="arch" type="xml">
             <list decoration-danger="balance &lt; 0" decoration-warning="pending_service_count &gt; 0" decoration-success="compliance_state == 'green'">
                 <field name="employee_number"/>
-                <field name="pin_access" password="True" string="NIP de Acceso"/>
                 <field name="name"/>
                 <field name="position"/>
                 <field name="phone"/>
@@ -66,6 +65,7 @@
                         <group string="Vinculación de Personal">
                             <field name="employee_id" placeholder="Vincular con empleado oficial..."/>
                             <field name="employee_number"/>
+                            <field name="pin_access" password="True" string="NIP de Acceso"/>
                             <field name="position"/>
                             <field name="phone"/>
                             <field name="initial_fund"/>
