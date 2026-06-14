@@ -5,10 +5,6 @@ from datetime import datetime, timedelta, time
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
-# Nuevo campo para el acceso seguro en el portal
-    pin_access = fields.Char('NIP de Acceso (4 dígitos)', size=4, help="NIP numérico para ingresar al portal", default="1234", tracking=True)
-
-
 class SgsCustodian(models.Model):
     _name = 'sgs.custodian'
     _description = 'Custodio SGS'
@@ -17,7 +13,10 @@ class SgsCustodian(models.Model):
 
     employee_id = fields.Many2one('hr.employee', string='Empleado Relacionado', tracking=True, ondelete='restrict')
 
-    # MODIFICACIÓN: name y employee_number ahora se calculan juntos para evitar inconsistencias de tipos en Odoo 19
+    # --- POSICIÓN CORRECTA: El campo ahora vive dentro del modelo ---
+    pin_access = fields.Char('NIP de Acceso (4 dígitos)', size=4, help="NIP numérico para ingresar al portal", default="1234", tracking=True)
+
+    # MODIFICACIÓN: name y employee_number ahora se calculan juntos para evitar inconsistencias de tipos en Odoo 1
     name = fields.Char('Nombre completo', compute='_compute_employee_data', inverse='_inverse_name', required=True, store=True, tracking=True)
     employee_number = fields.Char('No. empleado', compute='_compute_employee_data', store=True, tracking=True, index=True)
     
