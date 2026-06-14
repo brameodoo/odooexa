@@ -64,7 +64,7 @@
                     <group>
                         <group string="Vinculación de Personal">
                             <field name="employee_id" placeholder="Vincular con empleado oficial..."/>
-                            <field name="employee_number"/>
+                            <field name="ref_viaticos"/>
                             <field name="pin_access" password="True" string="NIP de Acceso"/>
                             <field name="position"/>
                             <field name="phone"/>
