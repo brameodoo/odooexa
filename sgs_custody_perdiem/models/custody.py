@@ -5,6 +5,9 @@ from datetime import datetime, timedelta, time
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
+# Nuevo campo para el acceso seguro en el portal
+    pin_access = fields.Char('NIP de Acceso (4 dígitos)', size=4, help="NIP numérico para ingresar al portal", default="1234", tracking=True)
+
 
 class SgsCustodian(models.Model):
     _name = 'sgs.custodian'
