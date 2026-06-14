@@ -79,16 +79,23 @@ class SgsCustodian(models.Model):
                 rec.employee_id.name = rec.name
                 
 
-    @api.depends('portal_token', 'phone')
+    @api.depends('phone', 'ref_viaticos', 'pin_access')
     def _compute_portal_url(self):
         base = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
         for rec in self:
-            rec.portal_url = f'{base}/sgs/custodio/{rec.portal_token}' if rec.portal_token else ''
+            # La URL oficial ahora apunta al Login unificado de la PWA
+            rec.portal_url = f'{base}/sgs/login'
+            
             phone = ''.join(ch for ch in (rec.phone or '') if ch.isdigit())
-            if phone and rec.portal_url:
+            if phone:
                 if len(phone) == 10:
                     phone = '52' + phone
-                msg = f'Hola {rec.name.split()[0] if rec.name else ""}, este es tu enlace de viáticos SGS: {rec.portal_url}'
+                
+                # Armamos el mensaje usando la nueva Referencia de Viáticos (SGS-Cxxxx) y su NIP
+                primer_nombre = rec.name.split()[0] if rec.name else "Custodio"
+                msg = f'Hola {primer_nombre}, este es tu portal de viáticos SGS: {rec.portal_url} ' \
+                      f'Tu Usuario es: {rec.ref_viaticos} y tu NIP es: {rec.pin_access or "1234"}'
+                
                 rec.whatsapp_url = 'https://wa.me/%s?text=%s' % (phone, msg.replace(' ', '%20'))
             else:
                 rec.whatsapp_url = ''
