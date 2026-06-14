@@ -1,0 +1,21 @@
+{
+  "name": "SGS Control de Viáticos",
+  "short_name": "SGS Viáticos",
+  "start_url": "/sgs/login",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/sgs_custody_perdiem/static/description/icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/sgs_custody_perdiem/static/description/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
