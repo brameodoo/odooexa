@@ -34,15 +34,16 @@ class SgsCustodyPortal(http.Controller):
             return request.redirect('/sgs/custodio')
 
         if request.httprequest.method == 'POST':
-            employee_num = (post.get('employee_number') or '').strip()
+            employee_num = (post.get('employee_number') or '').strip().upper() # Convertimos a mayúsculas por el prefijo SGS-C
             pin = (post.get('pin') or '').strip()
             
-            # Buscar al custodio que coincida con las credenciales
+            # --- CORRECCIÓN: Autenticación por la nueva referencia independiente ---
             custodian = request.env['sgs.custodian'].sudo().search([
-                ('employee_number', '=', employee_num),
+                ('ref_viaticos', '=', employee_num),
                 ('pin_access', '=', pin),
                 ('active', '=', True)
             ], limit=1)
+            
             
             if custodian:
                 # Login Exitoso: Redirigir al home del portal inyectando las cookies de sesión (válidas por 90 días)
