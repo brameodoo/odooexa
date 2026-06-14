@@ -69,6 +69,17 @@ class SgsCustodian(models.Model):
                     rec.name = ''
                 rec.employee_number = ''
                 
+    @api.onchange('employee_id')
+    def _onchange_employee_id_forcesave(self):
+        """ Fuerza la escritura inmediata del número de empleado en la interfaz web """
+        for rec in self:
+            if rec.employee_id:
+                # Si tu campo en hr.employee se llama registration_number
+                if hasattr(rec.employee_id, 'registration_number') and rec.employee_id.registration_number:
+                    rec.employee_number = rec.employee_id.registration_number
+                else:
+                    rec.employee_number = str(rec.employee_id.id)            
+                
                 
 
     def _inverse_name(self):
