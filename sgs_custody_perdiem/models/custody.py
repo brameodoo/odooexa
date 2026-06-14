@@ -13,12 +13,14 @@ class SgsCustodian(models.Model):
 
     employee_id = fields.Many2one('hr.employee', string='Empleado Relacionado', tracking=True, ondelete='restrict')
 
-    # --- POSICIÓN CORRECTA: El campo ahora vive dentro del modelo ---
+    # NIP de Acceso para el inicio de sesión en la PWA
     pin_access = fields.Char('NIP de Acceso (4 dígitos)', size=4, help="NIP numérico para ingresar al portal", default="1234", tracking=True)
 
-    # MODIFICACIÓN: name y employee_number ahora se calculan juntos para evitar inconsistencias de tipos en Odoo 1
-    name = fields.Char('Nombre completo', compute='_compute_employee_data', inverse='_inverse_name', required=True, store=True, tracking=True)
-    employee_number = fields.Char('No. empleado', compute='_compute_employee_data', store=True, tracking=True, index=True)
+    # --- NUEVO CAMPO INDEPENDIENTE Y FIJO (NUNCA SE BORRA AL GUARDAR) ---
+    ref_viaticos = fields.Char('Referencia Viáticos', required=True, copy=False, readonly=True, index=True, default=lambda self: _('Nuevo'))
+
+    name = fields.Char('Nombre completo', required=True, tracking=True)
+    employee_number = fields.Char('No. empleado', compute='_compute_employee_data', store=True)
     
     # Estos siguen como related porque job_title y work_phone sí son campos de tipo Char nativos
     position = fields.Char('Posición', related='employee_id.job_title', readonly=True, store=True, tracking=True)
@@ -49,53 +51,30 @@ class SgsCustodian(models.Model):
         ('red', 'Atrasado / Rechazado'),
     ], string='Semáforo', compute='_compute_amounts')
 
-    # NUEVO MÉTODO UNIFICADO: Extrae de forma segura las cadenas de texto del empleado sin romper el tipado
+    # Sobrescribimos el create del Custodio para generarle su número secuencial único e inalterable
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('ref_viaticos', _('Nuevo')) == _('Nuevo'):
+                vals['ref_viaticos'] = self.env['ir.sequence'].next_by_code('sgs.custodian.sequence') or '/'
+        return super(SgsCustodian, self).create(vals_list)
+
+    # Método para traer los datos del empleado de forma pasiva
     @api.depends('employee_id')
     def _compute_employee_data(self):
         for rec in self:
-            # Si hay un empleado seleccionado, extraemos su número
             if rec.employee_id:
-                # Intentamos jalar la referencia oficial de Odoo
-                reg_num = getattr(rec.employee_id, 'registration_number', False)
-                if reg_num:
-                    rec.employee_number = reg_num
-                else:
-                    # Si no está lleno, usamos su ID numérico como respaldo
-                    rec.employee_number = str(rec.employee_id.id)
-                
-                # Asignamos también el nombre
                 rec.name = rec.employee_id.name
+                rec.employee_number = str(rec.employee_id.id)
             else:
-                # Únicamente si el campo del empleado está vacío, limpiamos el número
-                rec.employee_number = False
-                rec.name = False
+                if not rec.name:
+                    rec.name = ''
+                rec.employee_number = ''
                 
-    @api.onchange('employee_id')
-    def _onchange_employee_id_forcesave(self):
-        """ Fuerza la escritura inmediata del número de empleado en la interfaz web """
-        for rec in self:
-            if rec.employee_id:
-                # Si tu campo en hr.employee se llama registration_number
-                if hasattr(rec.employee_id, 'registration_number') and rec.employee_id.registration_number:
-                    rec.employee_number = rec.employee_id.registration_number
-                else:
-                    rec.employee_number = str(rec.employee_id.id)            
-                
-                
-
     def _inverse_name(self):
         for rec in self:
             if rec.employee_id and not rec.employee_id.name:
                 rec.employee_id.name = rec.name
-
-# NUEVA SINTAXIS NATIVA PARA RESTRICCIONES EN ODOO 19
-    class Constraint:
-        _name = 'employee_number_unique'
-        _type = 'unique'
-        _fields = ['employee_number', 'company_id']
-        _message = 'El número de empleado debe ser único por compañía.'
-    
-    
 
     @api.depends('portal_token', 'phone')
     def _compute_portal_url(self):
@@ -145,16 +124,12 @@ class SgsCustodian(models.Model):
                 rec.compliance_state = 'green'
 
             # --- LÓGICA DE ALERTA DE SALDO BAJO ---
-            # Si el saldo baja de 2000 y no hemos enviado correo, disparamos
             if current_balance < 2000.00 and not rec.low_balance_alert_sent and (rec.initial_fund > 0 or deposits > 0):
                 rec.low_balance_alert_sent = True
-                # Buscamos la plantilla de correo de forma segura y la enviamos en segundo plano
                 template = rec.env.ref('sgs_custody_perdiem.email_template_custodian_low_balance', raise_if_not_found=False)
                 if template:
-                    # Enviar usando sudo para evitar problemas de permisos del custodio en el portal
                     template.sudo().send_mail(rec.id, force_send=True)
             
-            # Si el saldo vuelve a subir (gracias a un nuevo depósito), reiniciamos la bandera
             elif current_balance >= 2000.00 and rec.low_balance_alert_sent:
                 rec.low_balance_alert_sent = False
 
@@ -211,10 +186,10 @@ class SgsClient(models.Model):
     active = fields.Boolean(default=True)
 
 class Constraint:
-        _name = 'name_unique'
-        _type = 'unique'
-        _fields = ['name']
-        _message = 'El cliente ya existe.'
+    _name = 'name_unique'
+    _type = 'unique'
+    _fields = ['name']
+    _message = 'El cliente ya existe.'
     
 class SgsVehicle(models.Model):
     _name = 'sgs.vehicle'
@@ -257,7 +232,6 @@ class SgsRouteService(models.Model):
     company_id = fields.Many2one('res.company', string='Compañía', related='custodian_id.company_id', store=True, readonly=True)
     currency_id = fields.Many2one('res.currency', related='custodian_id.currency_id', readonly=True)
     
-    # 1. Dejamos únicamente este Many2one apuntando a Flota
     vehicle_id = fields.Many2one('fleet.vehicle', string='Vehículo')
     
     date = fields.Date('Fecha del servicio', required=True, default=fields.Date.context_today, tracking=True)
@@ -269,14 +243,13 @@ class SgsRouteService(models.Model):
     destination = fields.Char('Destino')
     companion = fields.Char('Compañero / segundo custodio')
     
-    # [Línea vieja 223 ELIMINADA para evitar el conflicto]
     vehicle_snapshot = fields.Char('Vehículo usado')
     plate_snapshot = fields.Char('Placas')
     comments = fields.Text('Comentarios / aclaraciones')
     amount_perdiem = fields.Monetary('Viáticos', currency_field='currency_id', default=0.0)
     amount_fuel = fields.Monetary('Gasolina', currency_field='currency_id', default=0.0)
     amount_lodging = fields.Monetary('Hospedaje', currency_field='currency_id', default=0.0)
-    # --- NUEVOS CAMPOS PARA COMPROBANTES OBLIGATORIOS ---
+
     fuel_ticket = fields.Binary('Ticket de Gasolina', attachment=True)
     fuel_ticket_filename = fields.Char('Nombre del Archivo de Gasolina')
     
@@ -309,7 +282,6 @@ class SgsRouteService(models.Model):
         for rec in self:
             if rec.date and rec.submit_datetime:
                 deadline = datetime.combine(rec.date, time.min) + timedelta(hours=36)
-                # Se usa el cierre del día del servicio + 12 horas como ventana práctica.
                 rec.is_late = rec.submit_datetime > deadline
             else:
                 rec.is_late = False
@@ -333,10 +305,10 @@ class SgsRouteService(models.Model):
             if vals.get('name', 'Nuevo') == 'Nuevo':
                 cust = self.env['sgs.custodian'].browse(vals.get('custodian_id'))
                 seq = self.env['ir.sequence'].next_by_code('sgs.route.service') or '0001'
-                emp = cust.employee_number or str(cust.id or '')
+                # Usamos la nueva referencia fija ref_viaticos para construir el Folio del servicio
+                emp = cust.ref_viaticos or str(cust.id or '')
                 vals['name'] = 'F-%s-%s' % (emp, seq)
             
-            # --- MODIFICACIÓN: Manejo de Vehículo o estatus Abordo ---
             if vals.get('vehicle_id'):
                 if not vals.get('vehicle_snapshot'):
                     veh = self.env['fleet.vehicle'].sudo().browse(vals['vehicle_id'])
@@ -346,7 +318,6 @@ class SgsRouteService(models.Model):
                         vals['vehicle_snapshot'] = f"{brand_name} {model_name}".strip() or veh.name
                         vals['plate_snapshot'] = veh.license_plate or ''
             else:
-                # Si no se seleccionó vehículo de la flota, asumimos el estatus de Abordo
                 vals['vehicle_snapshot'] = 'Abordo'
                 vals['plate_snapshot'] = 'N/A'
                 
@@ -422,7 +393,5 @@ class SgsFiscalReceipt(models.Model):
     @api.constrains('amount', 'ocr_status')
     def _check_amount(self):
         for rec in self:
-            # Permitimos monto 0 si el OCR no ha terminado exitosamente
-            # Esto evita bloqueos durante el proceso de carga y análisis
             if rec.amount <= 0 and rec.ocr_status == 'success':
                 raise ValidationError(_('El monto del comprobante fiscal debe ser mayor a cero.'))
