@@ -1,9 +1,7 @@
 import base64
-
 from odoo import fields, http, _
 from odoo.http import request
 from werkzeug.exceptions import NotFound
-
 
 class SgsCustodyPortal(http.Controller):
 
@@ -12,31 +10,73 @@ class SgsCustodyPortal(http.Controller):
         formatted_amount = "{:,.2f}".format(amount or 0.0)
         return f"{symbol} {formatted_amount}"
 
-    def _get_custodian(self, token):
-        custodian = request.env['sgs.custodian'].sudo().search([('portal_token', '=', token), ('active', '=', True)], limit=1)
-        if not custodian:
-            raise NotFound()
-        return custodian
+    def _get_custodian_from_session(self):
+        """ Verifica si el custodio tiene una sesión activa mediante cookies """
+        custodian_id = request.httprequest.cookies.get('sgs_custodian_id')
+        session_token = request.httprequest.cookies.get('sgs_session_token')
+        
+        if custodian_id and session_token:
+            custodian = request.env['sgs.custodian'].sudo().search([
+                ('id', '=', int(custodian_id)),
+                ('portal_token', '=', session_token),
+                ('active', '=', True)
+            ], limit=1)
+            return custodian
+        return False
 
-    @http.route(['/sgs/custodio/<string:token>'], type='http', auth='public', website=True, sitemap=False)
-    def custodian_home(self, token, **kw):
-        """ Ruta principal del portal - Carga empleados y flota oficial de Odoo """
-        custodian = self._get_custodian(token)
+    @http.route(['/sgs/login'], type='http', auth='public', website=True, sitemap=False)
+    def sgs_portal_login(self, **post):
+        """ Pantalla de inicio de sesión por No. de Empleado y NIP """
+        error_msg = False
+        
+        # Si ya tiene sesión activa, lo mandamos directo al home
+        if self._get_custodian_from_session():
+            return request.redirect('/sgs/custodio')
+
+        if request.httprequest.method == 'POST':
+            employee_num = (post.get('employee_number') or '').strip()
+            pin = (post.get('pin') or '').strip()
+            
+            # Buscar al custodio que coincida con las credenciales
+            custodian = request.env['sgs.custodian'].sudo().search([
+                ('employee_number', '=', employee_num),
+                ('pin_access', '=', pin),
+                ('active', '=', True)
+            ], limit=1)
+            
+            if custodian:
+                # Login Exitoso: Redirigir al home del portal inyectando las cookies de sesión (válidas por 90 días)
+                response = request.redirect('/sgs/custodio')
+                response.set_cookie('sgs_custodian_id', str(custodian.id), max_age=90*24*60*60, httponly=True)
+                response.set_cookie('sgs_session_token', custodian.portal_token, max_age=90*24*60*60, httponly=True)
+                return response
+            else:
+                error_msg = "Número de empleado o NIP incorrectos. Verifica con Administración."
+
+        return request.render('sgs_custody_perdiem.sgs_portal_login_template', {'error': error_msg})
+
+    @http.route(['/sgs/logout'], type='http', auth='public', website=True, sitemap=False)
+    def sgs_portal_logout(self):
+        """ Cierra la sesión borrando las cookies """
+        response = request.redirect('/sgs/login')
+        response.delete_cookie('sgs_custodian_id')
+        response.delete_cookie('sgs_session_token')
+        return response
+
+    @http.route(['/sgs/custodio'], type='http', auth='public', website=True, sitemap=False)
+    def custodian_home(self, **kw):
+        """ Nueva Ruta Principal Protegida - Ya no expone el token en la URL """
+        custodian = self._get_custodian_from_session()
+        if not custodian:
+            return request.redirect('/sgs/login')
+            
         services = request.env['sgs.route.service'].sudo().search([('custodian_id', '=', custodian.id)], limit=20, order='date desc, id desc')
         deposits = request.env['sgs.perdiem.deposit'].sudo().search([('custodian_id', '=', custodian.id)], limit=10, order='date desc, id desc')
         fiscal = request.env['sgs.fiscal.receipt'].sudo().search([('custodian_id', '=', custodian.id)], limit=10, order='date desc, id desc')
         clients = request.env['sgs.client'].sudo().search([('active', '=', True)], order='name')
         
-        # Buscar vehículos directamente desde el módulo de Flota (fleet.vehicle)
-        vehicles = request.env['fleet.vehicle'].sudo().search([
-            ('active', '=', True)
-        ], order='license_plate')
-        
-        # Buscar empleados activos excluyendo al propio custodio logueado
-        employees = request.env['hr.employee'].sudo().search([
-            ('active', '=', True),
-            ('id', '!=', custodian.employee_id.id)
-        ], order='name')
+        vehicles = request.env['fleet.vehicle'].sudo().search([('active', '=', True)], order='license_plate')
+        employees = request.env['hr.employee'].sudo().search([('active', '=', True), ('id', '!=', custodian.employee_id.id)], order='name')
 
         return request.render('sgs_custody_perdiem.portal_custodian_home', {
             'custodian': custodian,
@@ -46,9 +86,10 @@ class SgsCustodyPortal(http.Controller):
             'clients': clients,
             'vehicles': vehicles,
             'employees': employees,
-            'token': token,
+            'token': custodian.portal_token, # Lo pasamos internamente para procesar los forms POST seguros
             'format_amount': self._format_amount,
         })
+        
 
     @http.route(['/sgs/custodio/<string:token>/servicio'], type='http', auth='public', methods=['POST'], website=True, csrf=True, sitemap=False)
     def submit_service(self, token, **post):
