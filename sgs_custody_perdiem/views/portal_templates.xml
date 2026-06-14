@@ -9,19 +9,25 @@
                 </t>
 
                 <div class="sgs-portal">
-                    <header class="sgs-header">
+                    <header class="sgs-header" style="position: relative;">
                         <div>
                             <div class="sgs-overline">SGS · Control de Viáticos</div>
                             <h1><t t-esc="custodian.name"/></h1>
-                            <p><t t-esc="custodian.employee_number or ''"/> <t t-if="custodian.position">· <t t-esc="custodian.position"/></t></p>
+                            <p>
+                                <t t-esc="custodian.employee_number or ''"/> 
+                                <t t-if="custodian.position">· <t t-esc="custodian.position"/></t>
+                            </p>
                         </div>
                         <div class="sgs-balance" t-att-class="custodian.balance &lt; 0 and 'sgs-balance negative' or 'sgs-balance'">
                             <span>Saldo disponible</span>
                             <strong><t t-esc="format_amount(custodian.balance, custodian.currency_id)"/></strong>
                         </div>
+                        <a href="/sgs/logout" class="btn btn-sm btn-outline-secondary" style="position: absolute; bottom: -35px; right: 0; font-size: 0.8em; padding: 2px 8px;">
+                            <i class="fa fa-sign-out"/> Cerrar Sesión
+                        </a>
                     </header>
 
-                    <section class="sgs-kpis">
+                    <section class="sgs-kpis" style="margin-top: 40px;">
                         <div class="sgs-kpi"><span>Fondo inicial</span><strong><t t-esc="format_amount(custodian.initial_fund, custodian.currency_id)"/></strong></div>
                         <div class="sgs-kpi"><span>Depósitos</span><strong><t t-esc="format_amount(custodian.total_deposits, custodian.currency_id)"/></strong></div>
                         <div class="sgs-kpi"><span>Gastos</span><strong><t t-esc="format_amount(custodian.total_expenses, custodian.currency_id)"/></strong></div>
@@ -81,7 +87,7 @@
                                                 <input type="number" step="0.01" name="amount_fuel" id="amount_fuel" value="0" style="width: 100%; margin-top: 5px;" onchange="validateGastoRequired('amount_fuel', 'fuel_ticket')"/>
                                             </label>
                                             <label id="label_fuel_ticket" style="margin-bottom: 0;">Foto del Ticket (Gasolina)
-                                                <input type="file" name="fuel_ticket" id="fuel_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em;"/>
+                                                <input type="file" name="fuel_ticket" id="fuel_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em"/>
                                             </label>
                                         </div>
                                     </div>
@@ -205,6 +211,111 @@
                             </div>
                         </article>
                     </section>
+                </div>
+            </t>
+        </template>
+
+        <template id="sgs_portal_login_template" name="Login Custodios SGS">
+            <t t-call="portal.portal_layout">
+                <t t-set="head">
+                    <link rel="manifest" href="/sgs_custody_perdiem/static/src/manifest.json"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                    <style>
+                        .sgs-login-container {
+                            max-width: 400px;
+                            margin: 60px auto;
+                            padding: 30px 20px;
+                            background: #1e1e1e;
+                            border-radius: 12px;
+                            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+                            color: #ffffff;
+                            text-align: center;
+                        }
+                        .sgs-login-logo {
+                            font-size: 1.8em;
+                            font-weight: bold;
+                            margin-bottom: 5px;
+                            letter-spacing: 1px;
+                        }
+                        .sgs-login-sub {
+                            color: #888888;
+                            font-size: 0.9em;
+                            margin-bottom: 25px;
+                        }
+                        .sgs-login-form label {
+                            display: block;
+                            text-align: left;
+                            margin-bottom: 15px;
+                            font-size: 0.95em;
+                            color: #cccccc;
+                        }
+                        .sgs-login-form input {
+                            width: 100%;
+                            padding: 12px;
+                            margin-top: 6px;
+                            background: #2d2d2d;
+                            border: 1px solid #444444;
+                            border-radius: 6px;
+                            color: #ffffff;
+                            font-size: 1.1em;
+                            text-align: center;
+                        }
+                        .sgs-login-form input:focus {
+                            border-color: #007bff;
+                            outline: none;
+                        }
+                        .sgs-login-btn {
+                            width: 100%;
+                            padding: 14px;
+                            background: #007bff;
+                            border: none;
+                            border-radius: 6px;
+                            color: white;
+                            font-weight: bold;
+                            font-size: 1.1em;
+                            margin-top: 15px;
+                            cursor: pointer;
+                        }
+                        .sgs-login-btn:hover {
+                            background: #0056b3;
+                        }
+                        .sgs-alert-danger {
+                            background: #721c24;
+                            color: #f8d7da;
+                            padding: 10px;
+                            border-radius: 6px;
+                            margin-bottom: 20px;
+                            font-size: 0.9em;
+                            border: 1px solid #f5c6cb;
+                        }
+                    </style>
+                </t>
+
+                <div class="container">
+                    <div class="sgs-login-container">
+                        <div class="sgs-login-logo">SGS CUSTODIAS</div>
+                        <div class="sgs-login-sub">Portal de Viáticos &amp; Gastos</div>
+                        
+                        <t t-if="error">
+                            <div class="sgs-alert-danger">
+                                <t t-esc="error"/>
+                            </div>
+                        </t>
+
+                        <form method="post" action="/sgs/login" class="sgs-login-form">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            
+                            <label>No. de Empleado
+                                <input type="text" name="employee_number" required="required" placeholder="Ej. 1045" autofocus="autofocus"/>
+                            </label>
+                            
+                            <label>NIP de Seguridad (4 dígitos)
+                                <input type="password" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" required="required" placeholder="••••"/>
+                            </label>
+                            
+                            <button type="submit" class="sgs-login-btn">Ingresar al Sistema</button>
+                        </form>
+                    </div>
                 </div>
             </t>
         </template>
