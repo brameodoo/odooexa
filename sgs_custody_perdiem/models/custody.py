@@ -55,15 +55,13 @@ class SgsCustodian(models.Model):
         for rec in self:
             if rec.employee_id:
                 rec.name = rec.employee_id.name
-                # Extraemos la representación en texto del código identificador del empleado
-                rec.employee_number = rec.employee_id.display_name.split()[-1] if hasattr(rec.employee_id, 'employee_id') else str(rec.employee_id.id)
-                # Si en tu Odoo el identificador de texto de hr.employee es 'registration_number', puedes usar:
-                # rec.employee_number = rec.employee_id.registration_number or str(rec.employee_id.id)
+                # Jalamos directamente el campo 'registration_number' (Referencia de empleado)
+                # Si viene vacío, usamos el ID como respaldo seguro
+                rec.employee_number = rec.employee_id.registration_number or str(rec.employee_id.id)
             else:
-                if not rec.name:
-                    rec.name = ''
-                if not rec.employee_number:
-                    rec.employee_number = ''
+                rec.name = ''
+                rec.employee_number = ''
+                
 
     def _inverse_name(self):
         for rec in self:
