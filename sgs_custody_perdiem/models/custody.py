@@ -53,14 +53,22 @@ class SgsCustodian(models.Model):
     @api.depends('employee_id')
     def _compute_employee_data(self):
         for rec in self:
-            if rec.employee_id:
+            # Primero verificamos que exista el registro del empleado de forma física
+            if rec.employee_id and rec.employee_id.exists():
                 rec.name = rec.employee_id.name
-                # Jalamos directamente el campo 'registration_number' (Referencia de empleado)
-                # Si viene vacío, usamos el ID como respaldo seguro
-                rec.employee_number = rec.employee_id.registration_number or str(rec.employee_id.id)
+                
+                # Jalamos la referencia de empleado (registration_number) de Odoo 
+                if hasattr(rec.employee_id, 'registration_number') and rec.employee_id.registration_number:
+                    rec.employee_number = rec.employee_id.registration_number
+                else:
+                    # Si no tiene referencia, usamos su ID numérico como respaldo para que nunca quede vacío
+                    rec.employee_number = str(rec.employee_id.id)
             else:
-                rec.name = ''
+                # SOLO si el usuario borró manualmente al empleado, limpiamos los campos
+                if not rec.name:
+                    rec.name = ''
                 rec.employee_number = ''
+                
                 
 
     def _inverse_name(self):
