@@ -1,13 +1,13 @@
 <odoo>
     <data>
         <template id="portal_custodian_home" name="Portal custodio SGS">
-            <xpath expr="." position="inside">
-                <link rel="manifest" href="/sgs_custody_perdiem/static/src/manifest.json"/>
-                <meta name="apple-mobile-web-app-capable" content="yes"/>
-                <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-            </xpath>
-            
             <t t-call="portal.portal_layout">
+                <t t-set="head">
+                    <link rel="manifest" href="/sgs_custody_perdiem/static/src/manifest.json"/>
+                    <meta name="apple-mobile-web-app-capable" content="yes"/>
+                    <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+                </t>
+
                 <div class="sgs-portal">
                     <header class="sgs-header">
                         <div>
