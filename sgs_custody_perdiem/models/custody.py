@@ -16,10 +16,11 @@ class SgsCustodian(models.Model):
     # NIP de Acceso para el inicio de sesión en la PWA
     pin_access = fields.Char('NIP de Acceso (4 dígitos)', size=4, help="NIP numérico para ingresar al portal", default="1234", tracking=True)
 
-    # --- NUEVO CAMPO INDEPENDIENTE Y FIJO (NUNCA SE BORRA AL GUARDAR) ---
+    # --- CAMPO INDEPENDIENTE Y FIJO ---
     ref_viaticos = fields.Char('Referencia Viáticos', required=True, copy=False, readonly=True, index=True, default=lambda self: _('Nuevo'))
 
-    name = fields.Char('Nombre completo', required=True, tracking=True)
+    # Regresamos el compute e inverse al campo name para que Odoo jale el nombre del empleado automáticamente
+    name = fields.Char('Nombre completo', compute='_compute_employee_data', inverse='_inverse_name', required=True, store=True, tracking=True)
     employee_number = fields.Char('No. empleado', compute='_compute_employee_data', store=True)
     
     # Estos siguen como related porque job_title y work_phone sí son campos de tipo Char nativos
@@ -56,10 +57,11 @@ class SgsCustodian(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('ref_viaticos', _('Nuevo')) == _('Nuevo'):
+                # Busca la secuencia que vas a dar de alta manualmente
                 vals['ref_viaticos'] = self.env['ir.sequence'].next_by_code('sgs.custodian.sequence') or '/'
         return super(SgsCustodian, self).create(vals_list)
 
-    # Método para traer los datos del empleado de forma pasiva
+    # El método compute corregido para que calcule el Nombre automáticamente y mantenga el ID del empleado
     @api.depends('employee_id')
     def _compute_employee_data(self):
         for rec in self:
@@ -70,11 +72,12 @@ class SgsCustodian(models.Model):
                 if not rec.name:
                     rec.name = ''
                 rec.employee_number = ''
-                
+
     def _inverse_name(self):
         for rec in self:
             if rec.employee_id and not rec.employee_id.name:
                 rec.employee_id.name = rec.name
+                
 
     @api.depends('portal_token', 'phone')
     def _compute_portal_url(self):
