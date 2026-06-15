@@ -6,6 +6,51 @@
                     <link rel="manifest" href="/sgs_custody_perdiem/static/src/manifest.json"/>
                     <meta name="apple-mobile-web-app-capable" content="yes"/>
                     <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+                    
+                    <link rel="apple-touch-icon" href="/sgs_custody_perdiem/static/description/icon.png"/>
+                    <link rel="apple-touch-icon" sizes="192x192" href="/sgs_custody_perdiem/static/description/icon_192.png"/>
+                    <link rel="apple-touch-icon" sizes="512x512" href="/sgs_custody_perdiem/static/description/icon_512.png"/>
+
+                    <style>
+                        /* Estilos para el contenedor dinámico de Casetas */
+                        .sgs-toll-row {
+                            background: #2d2d2d;
+                            padding: 12px;
+                            border-radius: 8px;
+                            margin-bottom: 10px;
+                            border-left: 4px solid #17a2b8;
+                            transition: all 0.3s ease-in-out;
+                        }
+                        .sgs-toll-row.hidden-row {
+                            display: none;
+                            opacity: 0;
+                            transform: translateY(-10px);
+                        }
+                        .sgs-toll-row.show-row {
+                            display: block !important;
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                        .sgs-add-toll-btn {
+                            background: none;
+                            border: 2px dashed #17a2b8;
+                            color: #17a2b8;
+                            padding: 10px;
+                            width: 100%;
+                            border-radius: 8px;
+                            font-weight: bold;
+                            cursor: pointer;
+                            margin-bottom: 20px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: background 0.2s;
+                        }
+                        .sgs-add-toll-btn:hover {
+                            background: rgba(23, 162, 184, 0.1);
+                        }
+                    </style>
                 </t>
 
                 <div class="sgs-portal">
@@ -14,7 +59,7 @@
                             <div class="sgs-overline">SGS · Control de Viáticos</div>
                             <h1><t t-esc="custodian.name"/></h1>
                             <p>
-                                <t t-esc="custodian.employee_number or ''"/> 
+                                <t t-esc="custodian.ref_viaticos or ''"/> 
                                 <t t-if="custodian.position">· <t t-esc="custodian.position"/></t>
                             </p>
                         </div>
@@ -87,7 +132,7 @@
                                                 <input type="number" step="0.01" name="amount_fuel" id="amount_fuel" value="0" style="width: 100%; margin-top: 5px;" onchange="validateGastoRequired('amount_fuel', 'fuel_ticket')"/>
                                             </label>
                                             <label id="label_fuel_ticket" style="margin-bottom: 0;">Foto del Ticket (Gasolina)
-                                                <input type="file" name="fuel_ticket" id="fuel_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em"/>
+                                                <input type="file" name="fuel_ticket" id="fuel_ticket" accept="image/*" capture="camera" style="width: 100%; margin-top: 5px; font-size: 0.9em;"/>
                                             </label>
                                         </div>
                                     </div>
@@ -115,16 +160,37 @@
 
                                 <label>Especificar gastos varios<input name="misc_detail" placeholder="Obligatorio si hay gastos varios"/></label>
                                 
-                                <div class="sgs-tolls">
-                                    <h3>Casetas</h3>
-                                    <p>Si tienes varias casetas, puedes llenar hasta tres líneas en esta versión inicial.</p>
-                                    <t t-foreach="[1,2,3]" t-as="i">
-                                        <div class="sgs-three">
-                                            <input name="toll_name[]" placeholder="Caseta"/>
-                                            <input type="number" step="0.01" name="toll_amount[]" placeholder="Monto"/>
-                                            <input type="file" name="toll_image[]" accept="image/*" capture="camera"/>
+                                <div class="sgs-tolls" style="margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px;">
+                                    <h3 style="font-size: 1.1em; margin-bottom: 5px; color: #333;">Casetas de Peaje</h3>
+                                    <p class="sgs-help" style="font-size: 0.85em; margin-bottom: 15px; color: #666;">Registra las casetas utilizadas en tu ruta presionando el botón de agregar.</p>
+                                    
+                                    <div id="sgs_tolls_container">
+                                        <div class="sgs-toll-row">
+                                            <div class="sgs-three">
+                                                <input name="toll_name[]" placeholder="Nombre de Caseta 1"/>
+                                                <input type="number" step="0.01" name="toll_amount[]" placeholder="Monto $"/>
+                                                <input type="file" name="toll_image[]" accept="image/*" capture="camera"/>
+                                            </div>
                                         </div>
-                                    </t>
+                                        <div id="toll_row_2" class="sgs-toll-row hidden-row">
+                                            <div class="sgs-three">
+                                                <input name="toll_name[]" placeholder="Nombre de Caseta 2"/>
+                                                <input type="number" step="0.01" name="toll_amount[]" placeholder="Monto $"/>
+                                                <input type="file" name="toll_image[]" accept="image/*" capture="camera"/>
+                                            </div>
+                                        </div>
+                                        <div id="toll_row_3" class="sgs-toll-row hidden-row">
+                                            <div class="sgs-three">
+                                                <input name="toll_name[]" placeholder="Nombre de Caseta 3"/>
+                                                <input type="number" step="0.01" name="toll_amount[]" placeholder="Monto $"/>
+                                                <input type="file" name="toll_image[]" accept="image/*" capture="camera"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" id="btn_add_toll" class="sgs-add-toll-btn" onclick="addTollRowDynamic()">
+                                        <i class="fa fa-plus-circle"/> Agregar otra caseta
+                                    </button>
                                 </div>
                                 
                                 <label>Evidencia general<input type="file" name="evidence" accept="image/*" capture="camera"/></label>
@@ -132,6 +198,7 @@
                                 <button type="submit" class="sgs-btn primary">Cerrar servicio</button>
 
                                 <script type="text/javascript">
+                                    // Función mandatoria de validación de Gasolina/Hospedaje
                                     function validateGastoRequired(amountId, fileId) {
                                         var amountInput = document.getElementById(amountId);
                                         var fileInput = document.getElementById(fileId);
@@ -146,6 +213,28 @@
                                                 fileInput.removeAttribute('required');
                                                 labelInput.style.color = '';
                                                 labelInput.style.fontWeight = 'normal';
+                                            }
+                                        }
+                                    }
+
+                                    // LÓGICA JAVASCRIPT DEL ACORDEÓN DE CASETAS
+                                    var currentTollRows = 1;
+                                    function addTollRowDynamic() {
+                                        if (currentTollRows == 1) {
+                                            var row2 = document.getElementById('toll_row_2');
+                                            if (row2) {
+                                                row2.classList.remove('hidden-row');
+                                                row2.classList.add('show-row');
+                                                currentTollRows = 2;
+                                            }
+                                        } else if (currentTollRows == 2) {
+                                            var row3 = document.getElementById('toll_row_3');
+                                            if (row3) {
+                                                row3.classList.remove('hidden-row');
+                                                row3.classList.add('show-row');
+                                                currentTollRows = 3;
+                                                // Ocultamos el botón al llegar al límite máximo de 3
+                                                document.getElementById('btn_add_toll').style.display = 'none';
                                             }
                                         }
                                     }
