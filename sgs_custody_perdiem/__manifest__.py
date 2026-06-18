@@ -1,6 +1,6 @@
 {
     'name': 'SGS Control de Viáticos y Custodias',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.0.2',  # Incrementamos la versión para actualizar la caché del cliente
     'category': 'Operations/Logistics',
     'summary': 'Gestión de custodios, rutas, viáticos, comprobación de gastos y portal público por token.',
     'description': '''
