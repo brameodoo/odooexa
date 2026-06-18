@@ -96,7 +96,15 @@
                                 </div>
                                 
                                 <label>Cliente<select name="client_id"><option value="">— Seleccionar —</option><t t-foreach="clients" t-as="client"><option t-att-value="client.id"><t t-esc="client.name"/></option></t></select></label>
-                                <div class="sgs-two"><label>Origen<input name="origin" placeholder="Ciudad / punto de salida"/></label><label>Destino<input name="destination" placeholder="Ciudad / punto de llegada"/></label></div> 
+                                
+                                <div class="sgs-two">
+                                    <label>Origen
+                                        <input name="origin" id="sgs_origin" placeholder="Escribe origen..." list="municipios_list" autocomplete="off"/>
+                                    </label>
+                                    <label>Destino
+                                        <input name="destination" id="sgs_destination" placeholder="Escribe destino..." list="municipios_list" autocomplete="off"/>
+                                    </label>
+                                </div> 
                                 
                                 <label>Vehículo
                                     <select name="vehicle_id">
@@ -197,6 +205,8 @@
                                 <label>Comentarios<textarea name="comments" placeholder="Observaciones o aclaraciones"></textarea></label>
                                 <button type="submit" class="sgs-btn primary">Cerrar servicio</button>
 
+                                <datalist id="municipios_list"></datalist>
+
                                 <script type="text/javascript">
                                     // Función mandatoria de validación de Gasolina/Hospedaje
                                     function validateGastoRequired(amountId, fileId) {
@@ -233,11 +243,27 @@
                                                 row3.classList.remove('hidden-row');
                                                 row3.classList.add('show-row');
                                                 currentTollRows = 3;
-                                                // Ocultamos el botón al llegar al límite máximo de 3
                                                 document.getElementById('btn_add_toll').style.display = 'none';
                                             }
                                         }
                                     }
+
+                                    // LÓGICA JAVASCRIPT PARA EL AUTORELLENADO DE MUNICIPIOS (JSON)
+                                    document.addEventListener("DOMContentLoaded", function() {
+                                        fetch('/sgs_custody_perdiem/static/src/json/municipios.json')
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                const datalist = document.getElementById('municipios_list');
+                                                if (datalist) {
+                                                    data.forEach(function(municipio) {
+                                                        const option = document.createElement('option');
+                                                        option.value = municipio;
+                                                        datalist.appendChild(option);
+                                                    });
+                                                }
+                                            })
+                                            .catch(error => console.error('Error cargando los municipios:', error));
+                                    });
                                 </script>
                             </form>
                         </article>
